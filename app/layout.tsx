@@ -82,7 +82,7 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen bg-white antialiased`}>
         <ClientLayout>
           <LuxuryNavbar />
-          <main className="min-h-screen pb-16 md:pb-0">{children}</main>
+          <main className="min-h-screen pt-20 lg:pt-24 pb-24 md:pb-0">{children}</main>
           <Footer />
         </ClientLayout>
       </body>

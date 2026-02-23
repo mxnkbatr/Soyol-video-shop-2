@@ -9,10 +9,12 @@
     "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.30",
     "@google/generative-ai": "^0.24.1",
     "@livekit/components-react": "^2.9.19",
     "@livekit/components-styles": "^1.2.0",
     "@types/canvas-confetti": "^1.9.0",
+    "ai": "^6.0.97",
     "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
     "dotenv": "^17.2.4",
@@ -28,6 +30,7 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hot-toast": "^2.4.1",
+    "react-markdown": "^10.1.0",
     "resend": "^6.9.1",
     "swr": "^2.2.4",
     "twilio": "^5.12.1",
@@ -35,6 +38,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20.10.6",
     "@types/nodemailer": "^7.0.9",
     "@types/react": "^18.2.46",

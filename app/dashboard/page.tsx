@@ -9,8 +9,8 @@ import {
   XCircle, Loader2, LogOut
 } from 'lucide-react';
 import { useUser, useAuth } from '@/context/AuthContext';
-import { useCartStore } from '@/lib/store/cartStore';
-import { useWishlistStore } from '@/lib/store/wishlistStore';
+import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 import { formatPrice } from '@/lib/utils';
 
 interface Order {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { MessageCircle, Loader2 } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import UserStatus from './UserStatus';
 
 interface AdminUser {
@@ -22,6 +23,7 @@ interface AdminSelectorProps {
 }
 
 export default function AdminSelector({ onSelect, compact = false }: AdminSelectorProps) {
+    const { t } = useTranslation();
     const [admins, setAdmins] = useState<AdminUser[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -51,7 +53,7 @@ export default function AdminSelector({ onSelect, compact = false }: AdminSelect
         return (
             <div className={`flex flex-col items-center justify-center text-slate-400 ${compact ? 'p-4' : 'p-8'}`}>
                 <Loader2 className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} animate-spin mb-2 text-orange-500`} />
-                <p className="text-sm">Finding support...</p>
+                <p className="text-sm">{t('chat', 'findingSupport')}</p>
             </div>
         );
     }
@@ -62,7 +64,7 @@ export default function AdminSelector({ onSelect, compact = false }: AdminSelect
                 <div className={`${compact ? 'w-12 h-12' : 'w-16 h-16'} bg-slate-800 rounded-full flex items-center justify-center mb-4`}>
                     <MessageCircle className={`${compact ? 'w-6 h-6' : 'w-8 h-8'} opacity-50`} />
                 </div>
-                <h3 className={`${compact ? 'text-base' : 'text-lg'} font-medium text-white mb-2`}>No agents available</h3>
+                <h3 className={`${compact ? 'text-base' : 'text-lg'} font-medium text-white mb-2`}>{t('chat', 'noAgents')}</h3>
                 <p className="text-xs">Please try again later.</p>
             </div>
         );
@@ -92,10 +94,10 @@ export default function AdminSelector({ onSelect, compact = false }: AdminSelect
                             <h3 className={`font-semibold text-white group-hover:text-orange-400 transition-colors truncate ${compact ? 'text-sm' : 'text-base'}`}>
                                 {admin.name || 'Support Agent'}
                             </h3>
-                            <UserStatus 
-                                isAdmin={admin.role === 'admin'} 
-                                isInCall={admin.isInCall} 
-                                isOnline={admin.isOnline} 
+                            <UserStatus
+                                isAdmin={admin.role === 'admin'}
+                                isInCall={admin.isInCall}
+                                isOnline={admin.isOnline}
                             />
                         </div>
 

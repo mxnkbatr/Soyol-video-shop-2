@@ -41,7 +41,7 @@ const products = [
     },
     {
         name: 'DJI Mavic 3 Cine',
-        image: 'https://images.unsplash.com/photo-1579829366248-204fe8413f31?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+        image: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
         price: 4999,
         rating: 4.9,
         category: 'Drones',
@@ -76,7 +76,7 @@ const products = [
     },
     {
         name: 'Rode Wireless GO II',
-        image: 'https://images.unsplash.com/photo-1590611936760-eeb9f5978ca6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+        image: 'https://images.unsplash.com/photo-1520529986492-5b52661e312d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
         price: 299,
         rating: 4.5,
         category: 'Audio',
@@ -123,7 +123,7 @@ const products = [
     },
     {
         name: 'GoPro HERO12 Black',
-        image: 'https://images.unsplash.com/photo-1629131726692-1accd0c93fd0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+        image: 'https://images.unsplash.com/photo-1564466136373-c3d80951131c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
         price: 399,
         rating: 4.7,
         category: 'Action Cameras',
@@ -154,8 +154,8 @@ async function seed() {
         const collection = db.collection('products');
 
         // Optional: Clear existing products
-        // await collection.deleteMany({});
-        // console.log('Cleared existing products');
+        await collection.deleteMany({});
+        console.log('Cleared existing products');
 
         const result = await collection.insertMany(products);
         console.log(`Inserted ${result.insertedCount} products`);

@@ -146,11 +146,11 @@ export default function BestProducts({ products }: BestProductsProps) {
                                     className="flex flex-wrap items-center gap-4 mb-10"
                                 >
                                     <div className="flex items-baseline gap-1.5">
-                                        <span className="text-sm font-semibold text-slate-500 align-top">
-                                            ₮
-                                        </span>
-                                        <span className="text-6xl font-bold text-slate-900 tracking-tighter">
+                                        <span className="text-6xl font-bold text-orange-500 tracking-tighter">
                                             {activeProduct.price.toLocaleString()}
+                                        </span>
+                                        <span className="text-4xl font-bold text-orange-500 align-baseline">
+                                            ₮
                                         </span>
                                     </div>
 

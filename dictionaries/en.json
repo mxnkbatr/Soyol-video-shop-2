@@ -7,12 +7,13 @@
     "deals": "Deals",
     "sale": "Sale",
     "help": "Help",
-    "search": "Search products, brands, categories...",
+    "search": "Search",
     "signIn": "Sign In",
     "signOut": "Sign Out",
     "myOrders": "My Orders",
     "dashboard": "Dashboard",
     "announcement": "🎉 Free shipping on orders over 50,000₮! | ⚡ New Arrivals are here",
+    "categories": "Categories",
     "allCategories": "All Categories",
     "trending": "Trending",
     "limitedOffer": "Limited Time Offers",
@@ -31,6 +32,22 @@
     "email": "Email",
     "admin": "Admin",
     "account": "Account"
+  },
+  "chat": {
+    "greeting": "How can we help you?",
+    "sendMessage": "Send Message",
+    "chatWithOperator": "Chat with Operator",
+    "videoCall": "Video Call",
+    "joinByCode": "Join by Room Code",
+    "selectOperator": "Select Chat Operator",
+    "selectVideoOperator": "Select Video Operator",
+    "aiAssistant": "Soyol AI Assistant",
+    "askAi": "Ask AI Assistant",
+    "typeMessage": "Type a message...",
+    "findingSupport": "Finding support...",
+    "noAgents": "No agents available",
+    "aiThinking": "Thinking...",
+    "welcomeAi": "Hello! I am Soyol Video Shop's AI Assistant. How can I help you today?"
   },
   "cart": {
     "title": "Your Cart",
@@ -153,5 +170,15 @@
     "close": "Close",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "toast": {
+    "addedToCart": "Added to cart!",
+    "removedFromCart": "Removed from cart",
+    "orderPlaced": "Order placed successfully",
+    "error": "An error occurred",
+    "success": "Success",
+    "copied": "Copied",
+    "emailRequired": "Email required",
+    "subscribed": "Subscribed to newsletter"
   }
 }

@@ -5,11 +5,11 @@ import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { 
-  Store as StoreIcon, 
-  MapPin, 
-  Star, 
-  Package, 
+import {
+  Store as StoreIcon,
+  MapPin,
+  Star,
+  Package,
   ShoppingBag,
   Phone,
   Mail,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import type { Store, Product } from '@/types/marketplace';
 import { formatPrice } from '@/lib/utils';
-import { useCartStore } from '@/lib/store/cartStore';
+import { useCartStore } from '@store/cartStore';
 import toast from 'react-hot-toast';
 
 export default function StorePage() {
@@ -144,11 +144,10 @@ export default function StorePage() {
                     <p className="text-gray-600 mb-4">{store.description}</p>
                   )}
                 </div>
-                <span className={`px-4 py-2 rounded-full text-sm font-bold ${
-                  store.status === 'ACTIVE' 
-                    ? 'bg-green-100 text-green-700' 
+                <span className={`px-4 py-2 rounded-full text-sm font-bold ${store.status === 'ACTIVE'
+                    ? 'bg-green-100 text-green-700'
                     : 'bg-gray-100 text-gray-700'
-                }`}>
+                  }`}>
                   {store.status === 'ACTIVE' ? 'Идэвхтэй' : store.status}
                 </span>
               </div>
@@ -227,26 +226,24 @@ export default function StorePage() {
             <h2 className="text-2xl font-black text-gray-900">
               Бүтээгдэхүүнүүд ({products.length})
             </h2>
-            
+
             {/* View Mode Toggle */}
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition ${
-                  viewMode === 'grid'
+                className={`p-2 rounded-lg transition ${viewMode === 'grid'
                     ? 'bg-orange-600 text-white'
                     : 'bg-white text-gray-600 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 <Grid className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition ${
-                  viewMode === 'list'
+                className={`p-2 rounded-lg transition ${viewMode === 'list'
                     ? 'bg-orange-600 text-white'
                     : 'bg-white text-gray-600 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 <List className="w-5 h-5" />
               </button>
@@ -259,7 +256,7 @@ export default function StorePage() {
               <p className="text-gray-500">Энэ дэлгүүрт бараа байхгүй байна</p>
             </div>
           ) : (
-            <div className={viewMode === 'grid' 
+            <div className={viewMode === 'grid'
               ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'
               : 'space-y-4'
             }>

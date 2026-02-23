@@ -24,8 +24,8 @@ interface PremiumSearchBarProps {
   className?: string;
 }
 
-export default function PremiumSearchBar({ 
-  onSearch, 
+export default function PremiumSearchBar({
+  onSearch,
   placeholder = "Search for products, brands, or categories...",
   className = ""
 }: PremiumSearchBarProps) {
@@ -47,16 +47,37 @@ export default function PremiumSearchBar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Update suggestions based on query
+  // Update suggestions based on query using Gemini
   useEffect(() => {
-    if (query.length > 0) {
-      // In production, fetch from API
-      setSuggestions(trendingSearches.filter(s => 
-        s.text.toLowerCase().includes(query.toLowerCase())
-      ));
-    } else {
-      setSuggestions(trendingSearches);
-    }
+    const fetchSuggestions = async () => {
+      if (query.length > 3) {
+        try {
+          const response = await fetch('/api/search/suggestions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setSuggestions(prev => [
+              ...data.suggestions,
+              ...trendingSearches.filter(s => s.text.toLowerCase().includes(query.toLowerCase()) && !data.suggestions.some((ds: any) => ds.text === s.text))
+            ].slice(0, 5));
+          }
+        } catch (error) {
+          console.error('Smart Search Error:', error);
+          setSuggestions(trendingSearches.filter(s => s.text.toLowerCase().includes(query.toLowerCase())));
+        }
+      } else if (query.length > 0) {
+        setSuggestions(trendingSearches.filter(s => s.text.toLowerCase().includes(query.toLowerCase())));
+      } else {
+        setSuggestions(trendingSearches);
+      }
+    };
+
+    const timer = setTimeout(fetchSuggestions, 500);
+    return () => clearTimeout(timer);
   }, [query]);
 
   const handleSearch = () => {
@@ -92,19 +113,17 @@ export default function PremiumSearchBar({
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className={`relative bg-white border-2 transition-all duration-300 ${
-          isFocused 
-            ? 'border-slate-900 shadow-xl shadow-slate-200/50' 
-            : 'border-slate-200 hover:border-slate-300 shadow-sm'
-        }`}
+        className={`relative bg-white border-2 transition-all duration-300 ${isFocused
+          ? 'border-slate-900 shadow-xl shadow-slate-200/50'
+          : 'border-slate-200 hover:border-slate-300 shadow-sm'
+          }`}
         style={{ borderRadius: '2px' }} // Sharp, premium edges
       >
         {/* Search Icon */}
         <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none">
-          <Search 
-            className={`w-5 h-5 transition-colors duration-300 ${
-              isFocused ? 'text-slate-900' : 'text-slate-400'
-            }`} 
+          <Search
+            className={`w-5 h-5 transition-colors duration-300 ${isFocused ? 'text-slate-900' : 'text-slate-400'
+              }`}
             strokeWidth={1.5}
           />
         </div>

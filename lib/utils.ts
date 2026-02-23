@@ -6,7 +6,19 @@
  * Format price with Mongolian Tugrik (₮)
  */
 export function formatPrice(price: number): string {
-  return `${price.toLocaleString('mn-MN')}₮`;
+  return new Intl.NumberFormat('en-US', {
+    style: 'decimal',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price) + ' ₮';
+}
+
+export function formatCurrency(price: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'decimal',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
 }
 
 /**

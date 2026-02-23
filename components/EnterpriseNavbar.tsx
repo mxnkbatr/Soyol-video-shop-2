@@ -8,7 +8,7 @@ import {
   Search, User, Heart, ShoppingBag, Menu, X, ChevronDown,
   Globe, HelpCircle, Package, LayoutGrid
 } from 'lucide-react';
-import { useCartStore } from '@/lib/store/cartStore';
+import { useCartStore } from '@/store/cartStore';
 import MegaMenu from './MegaMenu';
 
 // Mock data for mega menu categories

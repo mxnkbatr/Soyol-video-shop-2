@@ -12,7 +12,7 @@ import {
   Minus, Plus, ArrowRight
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
-import { useCartStore } from '@/lib/store/cartStore';
+import { useCartStore } from '@/store/cartStore';
 import toast from 'react-hot-toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAuth } from '@/context/AuthContext';
@@ -31,7 +31,6 @@ export type ProductDetailData = {
   inventory?: number;
   brand?: string;
   model?: string;
-  warranty?: string;
   delivery?: string;
   paymentMethods?: string;
   createdAt?: string;
@@ -53,44 +52,12 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
   const { addItem } = useCartStore();
   const { t } = useTranslation();
 
-  // Mock multiple images for the gallery
-  const images = [
-    product.image || '/soyol-logo.png',
-    product.image || '/soyol-logo.png',
-    product.image || '/soyol-logo.png'
-  ];
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 100);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addItem({ ...product, image: product.image || '', rating: product.rating ?? 0, stockStatus: product.stockStatus as any });
-    }
-    toast.custom((t) => (
-      <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
-        <div className="flex-1 w-0 p-4">
-          <div className="flex items-start">
-            <div className="flex-shrink-0 pt-0.5">
-              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-            </div>
-            <div className="ml-3 flex-1">
-              <p className="text-sm font-medium text-gray-900">Сагсанд нэмэгдлээ!</p>
-              <p className="mt-1 text-sm text-gray-500">{product.name}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    ));
-  };
-
-  const handleBuyNow = () => {
-    addItem({ ...product, image: product.image || '', rating: product.rating ?? 0, stockStatus: product.stockStatus as any });
-    router.push('/checkout');
-  };
+  // Mock multiple images for the gallery if only one exists
+  const images = product.image ? [
+    product.image,
+    product.image, // Mock
+    product.image  // Mock
+  ] : ['/soyol-logo.png'];
 
   const handleWishlist = () => {
     if (!isAuthenticated) {
@@ -105,13 +72,62 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
     toast.success(isWishlisted ? 'Хүслээс хассан' : 'Хүсэлд нэмсэн');
   };
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: `Check out ${product.name} on Soyol Video Shop`,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error('Error sharing', err);
+      }
+    } else {
+      toast.success('Link copied to clipboard');
+      navigator.clipboard.writeText(window.location.href);
+    }
+  };
+
+  const handleAddToCart = () => {
+    for (let i = 0; i < quantity; i++) {
+      addItem({ ...product, image: product.image || '', rating: product.rating ?? 0, stockStatus: product.stockStatus as any });
+    }
+    toast.custom((toastInstance) => (
+      <div className={`${toastInstance.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
+        <div className="flex-1 w-0 p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0 pt-0.5">
+              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+            </div>
+            <div className="ml-3 flex-1">
+              <p className="text-sm font-medium text-gray-900">{t('toast', 'addedToCart')}</p>
+              <p className="mt-1 text-sm text-gray-500">{product.name}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    ));
+  };
+
+  const handleBuyNow = () => {
+    addItem({ ...product, image: product.image || '', rating: product.rating ?? 0, stockStatus: product.stockStatus as any });
+    router.push('/checkout');
+  };
+
   const discount = product.originalPrice && product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
+
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
-      {/* Sticky Header for Quick Actions */}
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="min-h-screen bg-[#F5F5F7] pb-32 md:pb-0"
+    >
+      {/* Sticky Header for Quick Actions (Desktop) */}
       <motion.div
         initial={{ y: -100 }}
         animate={{ y: isScrolled ? 0 : -100 }}
@@ -120,11 +136,11 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 relative rounded-lg overflow-hidden border border-slate-100">
-              <Image src={product.image || '/soyol-logo.png'} alt={product.name} fill className="object-cover" />
+              <Image src={product.image || '/soyol-logo.png'} alt={product.name} fill className="object-contain p-1" />
             </div>
             <div>
               <h3 className="font-bold text-slate-900 text-sm line-clamp-1">{product.name}</h3>
-              <p className="text-orange-600 font-bold text-sm">{formatPrice(product.price)}</p>
+              <p className="text-orange-500 font-bold text-sm">{formatPrice(product.price)}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -138,9 +154,9 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
         </div>
       </motion.div>
 
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 text-sm text-slate-500 mb-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="max-w-[1440px] mx-auto px-0 md:px-6 lg:px-8 py-0 md:py-8">
+        {/* Breadcrumbs (Desktop) */}
+        <nav className="hidden md:flex items-center gap-2 text-sm text-slate-500 mb-8 overflow-x-auto whitespace-nowrap scrollbar-hide px-4 md:px-0">
           <Link href="/" className="hover:text-slate-900 transition-colors">Нүүр</Link>
           <ChevronRight className="w-4 h-4" />
           <Link href={`/category/${product.category.toLowerCase()}`} className="hover:text-slate-900 transition-colors capitalize">{product.category}</Link>
@@ -148,68 +164,79 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
           <span className="text-slate-900 font-medium truncate">{product.name}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-12">
 
-          {/* Left: Interactive Gallery (7 cols) */}
-          <div className="lg:col-span-7 space-y-4">
-            <motion.div
-              layoutId="main-image"
-              className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-white border border-slate-100 shadow-sm group"
-            >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeImageIndex}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="relative w-full h-full"
-                >
-                  <Image
-                    src={images[activeImageIndex]}
-                    alt={product.name}
-                    fill
-                    className="object-contain p-8 group-hover:scale-105 transition-transform duration-700 ease-out"
-                    priority
+          {/* Left: Mobile First Gallery (7 cols) */}
+          <div className="lg:col-span-7 bg-white md:bg-transparent pb-6 md:pb-0">
+            {/* Mobile Carousel - Snap Scroll */}
+            <div className="relative w-full aspect-square md:aspect-[4/3] md:rounded-3xl overflow-hidden md:bg-white md:border md:border-slate-100 md:shadow-sm group">
+              <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide h-full w-full">
+                {images.map((img, i) => (
+                  <div key={i} className="flex-none w-full h-full snap-center relative">
+                    <Image
+                      src={img}
+                      alt={`${product.name} ${i + 1}`}
+                      fill
+                      className="object-contain p-8 md:p-12"
+                      priority={i === 0}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Image Indicators */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 md:hidden">
+                {images.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${activeImageIndex === i ? 'bg-slate-800 w-3' : 'bg-slate-300'}`}
                   />
-                </motion.div>
-              </AnimatePresence>
+                ))}
+              </div>
 
-              {/* Badges */}
-              <div className="absolute top-6 left-6 flex flex-col gap-2">
-                {product.wholesale && (
-                  <span className="px-3 py-1.5 bg-orange-500 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-md">
-                    Бөөний үнэ
-                  </span>
-                )}
+              {/* Badges Overlay */}
+              <div className="absolute top-4 left-4 flex flex-col gap-2">
                 {product.stockStatus === 'in-stock' ? (
-                  <span className="px-3 py-1.5 bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-md">
-                    {product.inventory !== undefined && product.inventory < 10
-                      ? `${product.inventory} ширхэг`
-                      : '10+ ширхэг'}
-                  </span>
+                  <div className="px-2.5 py-1 backdrop-blur-md bg-white/90 border border-orange-100 rounded-full shadow-sm flex items-center gap-1.5">
+                    <Zap className="w-3 h-3 text-orange-600 fill-orange-600" />
+                    <span className="text-[10px] font-extrabold text-orange-600 uppercase tracking-wider">БЭЛЭН</span>
+                  </div>
                 ) : (
-                  <span className="px-3 py-1.5 bg-blue-500 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-md">
-                    Захиалгаар
-                  </span>
+                  <div className="px-2.5 py-1 backdrop-blur-md bg-white/90 border border-slate-100 rounded-full shadow-sm flex items-center gap-1.5">
+                    <Clock className="w-3 h-3 text-slate-500" />
+                    <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">ЗАХИАЛГААР</span>
+                  </div>
+                )}
+                {discount > 0 && (
+                  <div className="px-2.5 py-1 bg-red-500 text-white rounded-full shadow-sm flex items-center gap-1.5">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider">-{discount}%</span>
+                  </div>
                 )}
               </div>
 
-              {/* Wishlist Fab */}
-              <button
-                onClick={handleWishlist}
-                className="absolute top-6 right-6 p-3 bg-white/80 backdrop-blur-md rounded-full shadow-lg border border-white/20 text-slate-400 hover:text-red-500 hover:bg-white transition-all"
-              >
-                <Heart className={`w-6 h-6 ${isWishlisted ? 'fill-current text-red-500' : ''}`} />
-              </button>
-            </motion.div>
+              {/* Share & Wishlist Fab */}
+              <div className="absolute top-4 right-4 flex flex-col gap-3">
+                <button
+                  onClick={handleWishlist}
+                  className="p-2.5 bg-white/90 backdrop-blur-md rounded-full shadow-sm border border-slate-100 text-slate-400 hover:text-red-500 transition-all active:scale-90"
+                >
+                  <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current text-red-500' : ''}`} />
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="p-2.5 bg-white/90 backdrop-blur-md rounded-full shadow-sm border border-slate-100 text-slate-400 hover:text-blue-500 transition-all active:scale-90"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
 
-            {/* Thumbnails */}
-            <div className="grid grid-cols-4 gap-4">
+            {/* Desktop Thumbnails (Hidden on Mobile) */}
+            <div className="hidden md:grid grid-cols-4 gap-4 mt-4">
               {images.map((img, i) => (
                 <button
                   key={i}
-                  onClick={() => setActiveImageIndex(i)}
+                  onMouseEnter={() => setActiveImageIndex(i)}
                   className={`relative aspect-square rounded-2xl overflow-hidden bg-white border-2 transition-all ${i === activeImageIndex ? 'border-orange-500 ring-2 ring-orange-100' : 'border-slate-100 hover:border-slate-300'
                     }`}
                 >
@@ -220,42 +247,38 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
           </div>
 
           {/* Right: Product Info & Buy Box (5 cols) */}
-          <div className="lg:col-span-5 space-y-8">
+          <div className="lg:col-span-5 space-y-6 md:space-y-8 px-4 md:px-0 mt-4 md:mt-0">
             {/* Header Info */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Link href={`/store/${product.category.toLowerCase()}`} className="text-orange-600 font-bold text-sm tracking-wide uppercase hover:underline">
-                  Soyol Official
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Link href={`/store/${product.category.toLowerCase()}`} className="text-orange-600 font-extrabold text-xs md:text-sm tracking-widest uppercase hover:underline">
+                  {product.brand || product.category}
                 </Link>
-                <span className="text-slate-300">|</span>
-                <div className="flex items-center gap-1 text-amber-400">
-                  <Star className="w-4 h-4 fill-current" />
-                  <span className="text-slate-700 font-bold text-sm">{rating}</span>
+                <div className="flex items-center gap-1 text-amber-400 bg-amber-50 px-2 py-1 rounded-full">
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  <span className="text-slate-700 font-bold text-xs">{rating}</span>
                 </div>
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">
+              <h1 className="text-xl md:text-3xl lg:text-4xl font-black text-slate-900 leading-tight">
                 {product.name}
               </h1>
 
-              <div className="flex items-baseline gap-4 pt-2">
-                <span className="text-4xl font-black text-slate-900">{formatPrice(product.price)}</span>
+              <div className="flex items-end gap-3 pt-2">
+                <span className="text-3xl md:text-4xl font-bold text-orange-500 tracking-tight">{formatPrice(product.price)}</span>
                 {product.originalPrice && product.originalPrice > product.price && (
-                  <>
-                    <span className="text-lg text-slate-400 line-through decoration-2">{formatPrice(product.originalPrice)}</span>
-                    <span className="px-2.5 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-full">-{discount}%</span>
-                  </>
+                  <span className="text-sm md:text-lg text-slate-400 line-through decoration-2 mb-1">{formatPrice(product.originalPrice)}</span>
                 )}
               </div>
             </div>
 
-            {/* Key Features / Short Desc */}
-            <div className="prose prose-sm text-slate-600">
-              <p>{product.description || 'Энэхүү бүтээгдэхүүн нь хамгийн сүүлийн үеийн технологиор бүтээгдсэн бөгөөд мэргэжлийн түвшний гүйцэтгэлийг танд санал болгож байна.'}</p>
+            {/* Description */}
+            <div className="prose prose-sm text-slate-600 bg-slate-50 p-4 rounded-2xl">
+              <p className="leading-relaxed">{product.description || 'Энэхүү бүтээгдэхүүн нь хамгийн сүүлийн үеийн технологиор бүтээгдсэн бөгөөд мэргэжлийн түвшний гүйцэтгэлийг танд санал болгож байна.'}</p>
             </div>
 
-            {/* Options Selection */}
-            <div className="space-y-6 pt-6 border-t border-slate-200">
+            {/* Quantity & Actions (Desktop) */}
+            <div className="hidden md:block space-y-6 pt-6 border-t border-slate-200">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-slate-900">Тоо ширхэг</span>
                 <div className="flex items-center gap-4 bg-white border border-slate-200 rounded-full px-4 py-2">
@@ -269,7 +292,6 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={handleAddToCart}
@@ -289,23 +311,14 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
             </div>
 
             {/* Trust Signals */}
-            <div className="grid grid-cols-2 gap-4 pt-6">
-              <div className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              <div className="flex items-center gap-3 p-3 md:p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                   <Truck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Шуурхай хүргэлт</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">{product.delivery || '24-48 цагийн дотор'}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Албан ёсны эрх</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">{product.warranty || '1 жилийн баталгаа'}</p>
+                  <h4 className="font-bold text-slate-900 text-xs md:text-sm">Шуурхай хүргэлт</h4>
+                  <p className="text-[10px] text-slate-500">{product.delivery || '24-48 цаг'}</p>
                 </div>
               </div>
             </div>
@@ -313,21 +326,20 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
         </div>
 
         {/* Detailed Specs & Info */}
-        <div className="mt-20">
-          <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-sm border border-slate-100">
-            <h2 className="text-2xl font-black text-slate-900 mb-8">Техник үзүүлэлт</h2>
-            <div className="grid md:grid-cols-2 gap-x-12 gap-y-6">
+        <div className="mt-12 md:mt-20 px-4 md:px-0">
+          <div className="bg-white rounded-3xl p-6 md:p-12 shadow-sm border border-slate-100">
+            <h2 className="text-lg md:text-2xl font-black text-slate-900 mb-6 md:mb-8">Техник үзүүлэлт</h2>
+            <div className="grid md:grid-cols-2 gap-x-12 gap-y-0 md:gap-y-6">
               {[
                 { label: 'Брэнд', value: product.brand || product.category },
                 { label: 'Загвар', value: product.model || product.name },
                 { label: 'Төлөв', value: product.stockStatus === 'in-stock' ? 'Бэлэн' : 'Захиалгаар' },
-                { label: 'Баталгаа', value: product.warranty || '12 сар' },
                 { label: 'Хүргэлт', value: product.delivery || 'Үнэгүй' },
                 { label: 'Төлбөрийн нөхцөл', value: product.paymentMethods || 'QPay, SocialPay, Card' }
               ].map((spec, i) => (
-                <div key={i} className="flex justify-between py-4 border-b border-slate-100 last:border-0">
-                  <span className="text-slate-500 font-medium">{spec.label}</span>
-                  <span className="text-slate-900 font-bold text-right">{spec.value}</span>
+                <div key={i} className="flex justify-between py-3 md:py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 px-2 rounded-lg transition-colors">
+                  <span className="text-slate-500 font-medium text-sm">{spec.label}</span>
+                  <span className="text-slate-900 font-bold text-right text-sm">{spec.value}</span>
                 </div>
               ))}
             </div>
@@ -335,22 +347,50 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
         </div>
 
         {/* Related Products */}
-        <div className="mt-20">
+        <div className="mt-12 md:mt-20 px-4 md:px-0">
           <RelatedProducts products={product.relatedProducts || []} />
         </div>
       </div>
 
       {/* Mobile Sticky Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 md:hidden z-50 safe-area-pb">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-3 md:hidden z-[100] pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="flex gap-3">
-          <button onClick={handleAddToCart} className="flex-1 py-3 bg-slate-100 text-slate-900 rounded-xl font-bold text-sm">
-            Сагсанд
+          <div className="w-12 h-12 flex items-center justify-center border border-slate-200 rounded-xl">
+            <span className="font-bold text-slate-900">{quantity}</span>
+          </div>
+          <button
+            onClick={handleAddToCart}
+            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl font-bold text-sm transition-all"
+          >
+            Сагслах
           </button>
-          <button onClick={handleBuyNow} className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm shadow-lg">
-            Шууд авах
+          <button
+            onClick={handleBuyNow}
+            className="flex-1 bg-slate-900 text-white rounded-xl font-bold text-sm shadow-lg flex items-center justify-center gap-1"
+          >
+            Худалдан авах
           </button>
         </div>
       </div>
-    </div >
+      {/* Mobile Sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-gray-100 md:hidden z-50 pb-safe">
+        <div className="flex gap-3">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleAddToCart}
+            className="flex-1 py-3.5 bg-slate-100 text-slate-900 rounded-2xl font-bold text-sm active:scale-95 transition-transform"
+          >
+            Сагслах
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleBuyNow}
+            className="flex-1 py-3.5 bg-[#FF5000] text-white rounded-2xl font-bold text-sm shadow-lg shadow-orange-500/20 active:scale-95 transition-transform"
+          >
+            Захиалах
+          </motion.button>
+        </div>
+      </div>
+    </motion.div>
   );
 }

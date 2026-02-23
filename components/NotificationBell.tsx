@@ -70,7 +70,7 @@ export default function NotificationBell() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.96 }}
               transition={{ duration: 0.15 }}
-              className="absolute right-0 top-full mt-2 w-[280px] bg-white rounded-xl shadow-lg border border-gray-200 z-50 p-4"
+              className="absolute right-0 top-full mt-2 w-[280px] bg-white rounded-xl shadow-lg border border-gray-200 z-[100] p-4"
             >
               <p className="text-sm text-gray-600 mb-3">Sign in to view notifications.</p>
               <Link
@@ -110,7 +110,7 @@ export default function NotificationBell() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-[320px] max-h-[320px] overflow-hidden bg-white rounded-xl shadow-lg border border-gray-200 z-50"
+            className="absolute right-0 top-full mt-2 w-[320px] max-h-[320px] overflow-hidden bg-white rounded-xl shadow-lg border border-gray-200 z-[100]"
           >
             <div className="px-4 py-3 border-b border-gray-100 font-semibold text-gray-900">
               Notifications

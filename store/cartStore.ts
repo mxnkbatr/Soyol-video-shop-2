@@ -4,6 +4,7 @@ import type { Product } from '@models/Product';
 
 export interface CartItem extends Product {
   quantity: number;
+  selected: boolean; // New: flag for Taobao-style selection
 }
 
 interface CartState {
@@ -11,9 +12,15 @@ interface CartState {
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
+  toggleItemSelection: (productId: string) => void; // New
+  toggleAllSelection: (selected: boolean) => void; // New
   clearCart: () => void;
   getTotalItems: () => number;
+  getSelectedTotalItems: () => number; // New
   getTotalPrice: () => number;
+  getSelectedTotalPrice: () => number; // New
+  getSelectedTotalItemsByStatus: (status: 'in-stock' | 'pre-order') => number; // New
+  getSelectedTotalPriceByStatus: (status: 'in-stock' | 'pre-order') => number; // New
   setAuthenticated: (isAuth: boolean) => void;
 }
 
@@ -49,7 +56,17 @@ export const useCartStore = create<CartState>()(
             ),
           });
         } else {
-          set({ items: [...items, { ...product, quantity: 1 }] });
+          set({
+            items: [
+              ...items,
+              {
+                ...product,
+                quantity: 1,
+                selected: true,
+                isReady: (product.stockStatus || 'in-stock') === 'in-stock'
+              }
+            ]
+          });
         }
       },
 
@@ -69,14 +86,52 @@ export const useCartStore = create<CartState>()(
         });
       },
 
+      toggleItemSelection: (productId) => {
+        set({
+          items: get().items.map((item) =>
+            item.id === productId ? { ...item, selected: !item.selected } : item
+          ),
+        });
+      },
+
+      toggleAllSelection: (selected) => {
+        set({
+          items: get().items.map((item) => ({ ...item, selected })),
+        });
+      },
+
       clearCart: () => set({ items: [] }),
 
       getTotalItems: () => {
         return get().items.reduce((total, item) => total + item.quantity, 0);
       },
 
+      getSelectedTotalItems: () => {
+        return get().items
+          .filter(item => item.selected)
+          .reduce((total, item) => total + item.quantity, 0);
+      },
+
       getTotalPrice: () => {
         return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+      },
+
+      getSelectedTotalPrice: () => {
+        return get().items
+          .filter(item => item.selected)
+          .reduce((total, item) => total + item.price * item.quantity, 0);
+      },
+
+      getSelectedTotalItemsByStatus: (status) => {
+        return get().items
+          .filter(item => item.selected && (item.stockStatus || 'in-stock') === status)
+          .reduce((total, item) => total + item.quantity, 0);
+      },
+
+      getSelectedTotalPriceByStatus: (status) => {
+        return get().items
+          .filter(item => item.selected && (item.stockStatus || 'in-stock') === status)
+          .reduce((total, item) => total + item.price * item.quantity, 0);
       },
 
       setAuthenticated: (isAuth: boolean) => {

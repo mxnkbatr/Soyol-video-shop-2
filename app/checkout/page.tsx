@@ -1,29 +1,120 @@
 'use client';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { ShoppingBag, User, Phone, MapPin, CreditCard, Package } from 'lucide-react';
-import { useCartStore } from '@lib/store/cartStore';
+import { ShoppingBag, User, Phone, MapPin, CreditCard, Package, ChevronRight, Plus, Check, X } from 'lucide-react';
+import { useCartStore } from '@store/cartStore';
 import { formatPrice } from '@lib/utils';
 import type { OrderFormData } from '@models/Order';
 import toast from 'react-hot-toast';
 import { useUser } from '@/context/AuthContext';
+import useSWR from 'swr';
+import Link from 'next/link';
+
+interface Address {
+  id: string;
+  label?: string;
+  city: string;
+  district: string;
+  khoroo: string;
+  street: string;
+  entrance?: string;
+  floor?: string;
+  door?: string;
+  note?: string;
+  isDefault: boolean;
+}
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch addresses');
+  return res.json();
+};
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isSignedIn } = useUser();
   const { items, getTotalPrice, clearCart } = useCartStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
+  const [addressTab, setAddressTab] = useState<'saved' | 'new'>('saved');
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  
+  const { data: addresses, isLoading: isLoadingAddresses } = useSWR<Address[]>(
+    user ? '/api/user/addresses' : null,
+    fetcher
+  );
+
   const [formData, setFormData] = useState<OrderFormData>({
     fullName: '',
     phone: '',
+    label: '',
     address: '',
     city: 'Улаанбаатар',
     district: '',
     notes: '',
   });
+
+  const [saveAddress, setSaveAddress] = useState(true);
+  const [showAllAddresses, setShowAllAddresses] = useState(false);
+
+  // Auto-fill user info
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: user.name || '',
+        phone: user.phone || '',
+      }));
+    }
+  }, [user]);
+
+  // Handle address loading and default selection
+  useEffect(() => {
+    if (addresses && addresses.length > 0) {
+      const addressId = searchParams?.get('addressId');
+      const isNewAddress = searchParams?.get('newAddress');
+      
+      if (addressId) {
+        const addr = addresses.find(a => a.id === addressId);
+        if (addr) {
+          setSelectedAddressId(addr.id);
+          handleAddressSelect(addr);
+          setAddressTab('saved');
+          return;
+        }
+      }
+      
+      if (isNewAddress) {
+        setAddressTab('new');
+        setFormData(prev => ({ ...prev, address: '', district: '', notes: '', label: '' }));
+        setSelectedAddressId(null);
+        return;
+      }
+
+      const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+      if (!selectedAddressId) {
+          setSelectedAddressId(defaultAddr.id);
+          handleAddressSelect(defaultAddr);
+      }
+      setAddressTab('saved');
+    } else if (addresses && addresses.length === 0) {
+      setAddressTab('new');
+    }
+  }, [addresses, searchParams]);
+
+  const handleAddressSelect = (addr: Address) => {
+    setSelectedAddressId(addr.id);
+    setFormData(prev => ({
+      ...prev,
+      city: addr.city,
+      district: addr.district,
+      address: `${addr.khoroo}-р хороо, ${addr.street}, ${addr.entrance ? `Орц: ${addr.entrance}, ` : ''}${addr.floor ? `Давхар: ${addr.floor}, ` : ''}${addr.door ? `Хаалга: ${addr.door}` : ''}`,
+      notes: addr.note || '',
+    }));
+  };
 
   const DELIVERY_FEE = deliveryMethod === 'delivery' ? 5000 : 0;
   const grandTotal = getTotalPrice() + DELIVERY_FEE;
@@ -69,6 +160,7 @@ export default function CheckoutPage() {
           district: 'Sukhbaatar'
         },
         shippingCost: DELIVERY_FEE,
+        saveAddress: saveAddress && addressTab === 'new', // Only save if it's a new address form
       };
 
       await fetch('/api/orders', {
@@ -174,52 +266,177 @@ export default function CheckoutPage() {
 
             {deliveryMethod === 'delivery' ? (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 overflow-hidden">
-                <div className="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                  <div className="p-2.5 bg-orange-50 rounded-xl"><MapPin className="w-5 h-5 text-orange-600" /></div>
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Хүргэлтийн хаяг</h2>
-                </div>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs uppercase font-bold text-gray-500 mb-1.5 ml-1">Хот <span className="text-red-500">*</span></label>
-                      <div className="relative">
-                        <select name="city" value={formData.city} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none font-medium appearance-none" required>
-                          <option value="Улаанбаатар">Улаанбаатар</option>
-                          <option value="Дархан">Дархан</option>
-                          <option value="Эрдэнэт">Эрдэнэт</option>
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs uppercase font-bold text-gray-500 mb-1.5 ml-1">Дүүрэг <span className="text-red-500">*</span></label>
-                      <div className="relative">
-                        <select name="district" value={formData.district} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none font-medium appearance-none" required>
-                          <option value="">Сонгох</option>
-                          <option value="Баянгол">Баянгол</option>
-                          <option value="Баянзүрх">Баянзүрх</option>
-                          <option value="Сүхбаатар">Сүхбаатар</option>
-                          <option value="Хан-Уул">Хан-Уул</option>
-                          <option value="Чингэлтэй">Чингэлтэй</option>
-                          <option value="Сонгинохайрхан">Сонгинохайрхан</option>
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs uppercase font-bold text-gray-500 mb-1.5 ml-1">Дэлгэрэнгүй хаяг <span className="text-red-500">*</span></label>
-                    <input type="text" name="address" value={formData.address} onChange={handleInputChange} placeholder="Хороо, гудамж, байр, тоот" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none font-medium" required />
-                  </div>
-                  <div>
-                    <label className="block text-xs uppercase font-bold text-gray-500 mb-1.5 ml-1">Нэмэлт тэмдэглэл</label>
-                    <textarea name="notes" value={formData.notes} onChange={handleInputChange} placeholder="Орцны код, хүргэх цаг гэх мэт..." rows={2} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none font-medium resize-none" />
+                <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-orange-50 rounded-xl"><MapPin className="w-5 h-5 text-orange-600" /></div>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900">Хүргэлтийн хаяг</h2>
                   </div>
                 </div>
+
+                {/* Tabs */}
+                <div className="flex p-1 bg-gray-100 rounded-xl mb-6">
+                    <button
+                        type="button"
+                        onClick={() => setAddressTab('saved')}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${addressTab === 'saved' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Хадгалсан хаяг
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setAddressTab('new');
+                            setFormData(prev => ({ ...prev, address: '', district: '', notes: '' }));
+                            setSelectedAddressId(null);
+                        }}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${addressTab === 'new' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Шинэ хаяг
+                    </button>
+                </div>
+
+                {addressTab === 'saved' ? (
+                    <div className="space-y-3">
+                        {addresses && addresses.length > 0 ? (
+                            <>
+                                {[...addresses]
+                                    .reverse() // Show newest first
+                                    .sort((a, b) => (a.isDefault === b.isDefault ? 0 : a.isDefault ? -1 : 1)) // Default on top
+                                    .slice(0, showAllAddresses ? undefined : 3)
+                                    .map((addr) => (
+                                    <div
+                                        key={addr.id}
+                                        onClick={() => handleAddressSelect(addr)}
+                                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-3 ${selectedAddressId === addr.id ? 'border-orange-500 bg-orange-50/50' : 'border-gray-100 hover:border-gray-200'}`}
+                                    >
+                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 flex-shrink-0 ${selectedAddressId === addr.id ? 'border-orange-500' : 'border-gray-300'}`}>
+                                            {selectedAddressId === addr.id && <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-bold text-gray-900">{addr.label || 'Гэрийн хаяг'}</span>
+                                                {addr.isDefault && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Үндсэн</span>}
+                                            </div>
+                                            <p className="text-sm text-gray-600 leading-relaxed">
+                                                {addr.district}, {addr.khoroo}-р хороо, {addr.street}
+                                                {addr.entrance && `, Орц: ${addr.entrance}`}
+                                                {addr.floor && `, Давхар: ${addr.floor}`}
+                                                {addr.door && `, Хаалга: ${addr.door}`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {addresses.length > 3 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAllAddresses(!showAllAddresses)}
+                                        className="w-full py-2 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                                    >
+                                        {showAllAddresses ? 'Багасгаж харах' : `Бусад ${addresses.length - 3} хаягийг харах`}
+                                    </button>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-center py-8">
+                                <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-500 mb-4">Танд хадгалсан хаяг байхгүй байна</p>
+                                <button
+                                    type="button"
+                                    onClick={() => setAddressTab('new')}
+                                    className="text-orange-600 font-bold hover:underline"
+                                >
+                                    Шинэ хаяг оруулах
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                        <label className="text-xs uppercase font-bold text-gray-500 ml-1">Хаягийн нэр (Жишээ: Гэр, Ажил)</label>
+                        <input 
+                            type="text" 
+                            name="label" 
+                            value={formData.label} 
+                            onChange={handleInputChange}
+                            placeholder="Гэр, Ажил г.м"
+                            className="w-full px-4 py-3 rounded-xl bg-gray-50 border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none font-medium"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-xs uppercase font-bold text-gray-500 ml-1">Хот/Аймаг</label>
+                            <select 
+                                name="city" 
+                                value={formData.city} 
+                                onChange={handleInputChange}
+                                className="w-full px-4 py-3 rounded-xl bg-gray-50 border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none font-medium appearance-none"
+                            >
+                                <option value="Улаанбаатар">Улаанбаатар</option>
+                                <option value="Дархан">Дархан</option>
+                                <option value="Эрдэнэт">Эрдэнэт</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs uppercase font-bold text-gray-500 ml-1">Дүүрэг/Сум</label>
+                            <select 
+                                name="district" 
+                                value={formData.district} 
+                                onChange={handleInputChange}
+                                className="w-full px-4 py-3 rounded-xl bg-gray-50 border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none font-medium appearance-none"
+                            >
+                                <option value="">Сонгох...</option>
+                                <option value="Баянзүрх">Баянзүрх</option>
+                                <option value="Баянгол">Баянгол</option>
+                                <option value="Сүхбаатар">Сүхбаатар</option>
+                                <option value="Чингэлтэй">Чингэлтэй</option>
+                                <option value="Хан-Уул">Хан-Уул</option>
+                                <option value="Сонгинохайрхан">Сонгинохайрхан</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-xs uppercase font-bold text-gray-500 ml-1">Дэлгэрэнгүй хаяг</label>
+                        <textarea 
+                            name="address" 
+                            value={formData.address} 
+                            onChange={handleInputChange}
+                            placeholder="Хороо, гудамж, байр, орц, давхар, тоот..."
+                            rows={2}
+                            className="w-full px-4 py-3 rounded-xl bg-gray-50 border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none font-medium resize-none"
+                        />
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-xs uppercase font-bold text-gray-500 ml-1">Нэмэлт тайлбар (Заавал биш)</label>
+                        <input 
+                            type="text" 
+                            name="notes" 
+                            value={formData.notes} 
+                            onChange={handleInputChange}
+                            placeholder="Орцны код, хүргэлтийн үеийн заавар г.м"
+                            className="w-full px-4 py-3 rounded-xl bg-gray-50 border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none font-medium"
+                        />
+                    </div>
+
+                    <div className="pt-2">
+                        <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50/50 cursor-pointer hover:bg-gray-50 transition-colors">
+                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${saveAddress ? 'bg-orange-500 border-orange-500' : 'bg-white border-gray-300'}`}>
+                                {saveAddress && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+                            </div>
+                            <input 
+                                type="checkbox" 
+                                checked={saveAddress} 
+                                onChange={(e) => setSaveAddress(e.target.checked)}
+                                className="hidden"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Энэ хаягийг үндсэн хаягаар хадгалах</span>
+                        </label>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ) : (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 overflow-hidden">
@@ -300,6 +517,8 @@ export default function CheckoutPage() {
             </div>
           </div>
         </form>
+
+
       </div>
     </div>
   );

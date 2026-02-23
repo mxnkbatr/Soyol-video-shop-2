@@ -15,7 +15,6 @@ export type ProductFormData = {
   inventory: number;
   brand?: string;
   model?: string;
-  warranty?: string;
   delivery?: string;
   paymentMethods?: string;
   attributes?: Record<string, string>; // { attributeId: value }

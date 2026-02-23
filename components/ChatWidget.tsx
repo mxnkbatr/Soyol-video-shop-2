@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowLeft, Video, MessageCircle } from 'lucide-react';
 import ChatWindow from '@/components/Chat/ChatWindow';
+import AIChatWindow from '@/components/Chat/AIChatWindow';
 import AdminSelector from '@/components/Chat/AdminSelector';
 import VideoCall from '@/components/VideoCall';
 import { useUser } from '@/context/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ChatWidgetProps {
     isOpen: boolean;
@@ -23,6 +25,7 @@ interface AdminUser {
 
 export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
     const { user } = useUser();
+    const { t } = useTranslation();
 
     // Generate a stable guest ID for unauthenticated users so chat messages have a sender
     const [guestId] = useState(() => {
@@ -39,7 +42,7 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
     const effectiveUser = user || { id: guestId, name: 'Зочин' };
 
     const [selectedAdmin, setSelectedAdmin] = useState<AdminUser | null>(null);
-    const [viewMode, setViewMode] = useState<'menu' | 'chat_selection' | 'video_selection' | 'chat' | 'video_call'>('menu');
+    const [viewMode, setViewMode] = useState<'menu' | 'chat_selection' | 'video_selection' | 'chat' | 'video_call' | 'ai_chat'>('menu');
 
     const handleSelectAdmin = (admin: AdminUser) => {
         setSelectedAdmin(admin);
@@ -59,7 +62,7 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
         } else if (viewMode === 'video_call') {
             setViewMode('video_selection');
             setSelectedAdmin(null);
-        } else if (viewMode === 'chat_selection' || viewMode === 'video_selection') {
+        } else if (viewMode === 'chat_selection' || viewMode === 'video_selection' || viewMode === 'ai_chat') {
             setViewMode('menu');
         }
     };
@@ -71,11 +74,11 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 20, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed z-50 top-1/2 -translate-y-1/2 right-20 md:right-28 w-[calc(100vw-100px)] md:w-96 h-[500px] max-h-[80vh] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+                    className="fixed z-[100] bottom-24 right-4 md:right-28 w-[calc(100vw-32px)] md:w-96 h-[500px] max-h-[70vh] bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
                 >
                     {/* Header */}
                     <div className="bg-slate-800/80 backdrop-blur-md p-4 border-b border-white/10 flex items-center justify-between shrink-0">
@@ -86,9 +89,10 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                 </button>
                             )}
                             <h3 className="font-bold text-white text-lg">
-                                {viewMode === 'menu' ? 'Танд яаж туслах вэ?' :
+                                {viewMode === 'menu' ? t('chat', 'greeting') :
                                     viewMode === 'chat' && selectedAdmin ? (selectedAdmin.name || 'Chat') :
-                                        viewMode === 'video_selection' ? 'Видео оператор сонгох' : 'Чатлах оператор сонгох'}
+                                        viewMode === 'ai_chat' ? t('chat', 'aiAssistant') :
+                                            viewMode === 'video_selection' ? t('chat', 'selectVideoOperator') : t('chat', 'selectOperator')}
                             </h3>
                         </div>
                         <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
@@ -97,9 +101,26 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-hidden relative bg-slate-900">
+                    <div className="flex-1 overflow-hidden relative bg-transparent">
                         {viewMode === 'menu' ? (
                             <div className="flex flex-col gap-4 p-6 h-full justify-center">
+                                {/* AI Assistant Option */}
+                                <button
+                                    onClick={() => setViewMode('ai_chat')}
+                                    className="flex items-center gap-4 p-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/5 transition-all group text-left relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                                        <MessageCircle className="w-24 h-24" />
+                                    </div>
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg>
+                                    </div>
+                                    <div className="relative z-10">
+                                        <h4 className="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">{t('chat', 'aiAssistant')}</h4>
+                                        <p className="text-sm text-slate-400">{t('chat', 'askAi')}</p>
+                                    </div>
+                                </button>
+
                                 <button
                                     onClick={() => setViewMode('chat_selection')}
                                     className="flex items-center gap-4 p-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/5 transition-all group text-left"
@@ -108,8 +129,8 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                         <MessageCircle className="w-6 h-6 text-blue-500 group-hover:text-white" />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-white text-lg">Зурвас бичих</h4>
-                                        <p className="text-sm text-slate-400">Оператортой чатлах</p>
+                                        <h4 className="font-bold text-white text-lg">{t('chat', 'sendMessage')}</h4>
+                                        <p className="text-sm text-slate-400">{t('chat', 'chatWithOperator')}</p>
                                     </div>
                                 </button>
 
@@ -121,8 +142,8 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                         <Video className="w-6 h-6 text-orange-500 group-hover:text-white" />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-white text-lg">Видео дуудлага</h4>
-                                        <p className="text-sm text-slate-400">Өрөөний кодоор холбогдох</p>
+                                        <h4 className="font-bold text-white text-lg">{t('chat', 'videoCall')}</h4>
+                                        <p className="text-sm text-slate-400">{t('chat', 'joinByCode')}</p>
                                     </div>
                                 </button>
                             </div>
@@ -135,6 +156,8 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                 }}
                                 onBack={handleBack}
                             />
+                        ) : viewMode === 'ai_chat' ? (
+                            <AIChatWindow onBack={handleBack} />
                         ) : viewMode === 'video_call' && selectedAdmin ? (
                             <div className="h-full overflow-y-auto bg-white">
                                 <VideoCall
@@ -148,8 +171,8 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                 <div className="p-4">
                                     <p className="text-slate-400 text-sm mb-4">
                                         {viewMode === 'video_selection'
-                                            ? 'Видео дуудлага хийх оператор сонгоно уу.'
-                                            : 'Чатлах оператор сонгоно уу.'}
+                                            ? t('chat', 'selectVideoOperator')
+                                            : t('chat', 'selectOperator')}
                                     </p>
                                     <AdminSelector onSelect={handleSelectAdmin} compact={true} />
                                 </div>

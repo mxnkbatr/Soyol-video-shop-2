@@ -1,6 +1,7 @@
 export interface OrderFormData {
   fullName: string;
   phone: string;
+  label?: string; // e.g. "Home", "Work"
   address: string;
   city: string;
   district: string;

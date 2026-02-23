@@ -8,7 +8,7 @@ import {
   Search, User, Heart, ShoppingBag, MessageCircle, Package,
   ChevronDown, Menu, X
 } from 'lucide-react';
-import { useCartStore } from '@/lib/store/cartStore';
+import { useCartStore } from '@/store/cartStore';
 
 export default function VibrantNavbar() {
   const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(false);

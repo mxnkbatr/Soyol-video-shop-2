@@ -6,6 +6,7 @@ import FeatureSection from '@/components/FeatureSection';
 import PremiumProductGrid from '@/components/PremiumProductGrid';
 import BannerSlider from '@/components/BannerSlider';
 import SpecialProductsCarousel from '@/components/SpecialProductsCarousel';
+import MobileFeaturedCarousel from '@/components/MobileFeaturedCarousel';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
@@ -91,6 +92,13 @@ export default function HomePage() {
       {/* MOBILE HERO */}
       <div className="lg:hidden">
         <MobileHero />
+      </div>
+
+      {/* Mobile Featured Products Carousel - Only on Mobile */}
+      <div className="lg:hidden">
+        {!loading && allProducts.length > 0 && (
+          <MobileFeaturedCarousel products={allProducts as any} />
+        )}
       </div>
 
       {/* Hero Section with Filter Tabs */}
@@ -281,14 +289,14 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Desktop Grid */}
+              {/* Desktop Grid - Unified with featured first */}
               <div className="hidden lg:block">
                 <PremiumProductGrid products={sortedProducts} />
               </div>
 
-              {/* Mobile Grid */}
+              {/* Mobile Grid - Regular products only (featured shown in carousel) */}
               <div className="lg:hidden">
-                <MobileProductGrid products={sortedProducts} />
+                <MobileProductGrid products={sortedProducts.filter(p => !p.featured)} />
               </div>
             </>
           )}

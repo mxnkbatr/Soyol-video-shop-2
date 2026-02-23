@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { Filter, ShoppingCart, Eye, ChevronDown } from 'lucide-react';
-import { formatPrice, getStarRating } from '@lib/utils';
-import { useCartStore } from '@lib/store/cartStore';
+import Link from 'next/link';
+import { Filter, ShoppingCart, Eye, ChevronDown, Sparkles } from 'lucide-react';
+import { formatPrice, getStarRating, formatCurrency } from '@lib/utils';
+import { useCartStore } from '@store/cartStore';
 import toast from 'react-hot-toast';
 import type { Product } from '@models/Product';
 import type { Category } from '@models/Category';
@@ -56,7 +57,7 @@ export default function CategoriesPage() {
     fetchData();
   }, []);
 
-  const filteredProducts = products.filter((product) => {
+  const filteredProducts = products.filter((product: Product) => {
     // Category Filter
     if (selectedCategory !== 'all') {
       if (product.category !== selectedCategory) return false;
@@ -101,11 +102,11 @@ export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-white py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+        {/* Desktop Header - Hidden on Mobile */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="hidden lg:block mb-8"
         >
           <h1 className="text-4xl font-black text-gray-900 mb-2">Бүх ангилал</h1>
           <p className="text-gray-600">
@@ -113,7 +114,137 @@ export default function CategoriesPage() {
           </p>
         </motion.div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        {/* Mobile Taobao Style Layout - Refined */}
+        <div className="lg:hidden fixed inset-0 top-[60px] pb-[70px] flex bg-white z-40">
+          {/* Left Sidebar - Categories (Apple Minimalist) */}
+          <div className="w-24 flex-shrink-0 bg-gray-50/50 overflow-y-auto scrollbar-hide border-r border-gray-100">
+            <div className="flex flex-col py-6 gap-6">
+              <button
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setSelectedSubcategory('all');
+                }}
+                className={`relative py-2 px-1 text-center transition-all group ${selectedCategory === 'all'
+                  ? 'text-gray-900'
+                  : 'text-gray-400'}`}
+              >
+                <div className={`mx-auto w-10 h-10 mb-2 rounded-full flex items-center justify-center transition-all ${selectedCategory === 'all' ? 'bg-gray-900 text-white shadow-lg' : 'bg-white text-gray-400 border border-gray-100'}`}>
+                   <Sparkles className="w-5 h-5" strokeWidth={1.5} />
+                </div>
+                <span className="text-[10px] uppercase tracking-widest font-medium">Бүгд</span>
+              </button>
+
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    setSelectedCategory(cat.id);
+                    setSelectedSubcategory('all');
+                  }}
+                  className={`relative py-2 px-1 text-center transition-all group ${selectedCategory === cat.id
+                    ? 'text-gray-900'
+                    : 'text-gray-400'}`}
+                >
+                  <div className={`mx-auto w-10 h-10 mb-2 rounded-full flex items-center justify-center transition-all ${selectedCategory === cat.id ? 'bg-gray-900 text-white shadow-lg' : 'bg-white text-gray-400 border border-gray-100'}`}>
+                    {/* Placeholder Icons - Replace with actual category icons if available */}
+                    <Filter className="w-5 h-5" strokeWidth={1.5} />
+                  </div>
+                  <span className="text-[10px] uppercase tracking-widest font-medium leading-relaxed line-clamp-2">{cat.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Content Area */}
+          <div className="flex-1 overflow-y-auto bg-white p-6 pb-24 scroll-smooth">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={selectedCategory}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="space-y-8"
+              >
+                {/* Banner Placeholder */}
+                <div className="relative aspect-[21/9] rounded-2xl overflow-hidden shadow-lg shadow-gray-200">
+                  <Image
+                    src={selectedCategory === 'all' ? '/soyol-logo.png' : categories.find(c => c.id === selectedCategory)?.image || '/soyol-logo.png'}
+                    alt="Category Banner"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent p-4 flex flex-col justify-center">
+                    <h3 className="text-white font-black text-sm uppercase tracking-widest">
+                      {selectedCategory === 'all' ? 'Шинэ бараанууд' : categories.find(c => c.id === selectedCategory)?.name}
+                    </h3>
+                    <p className="text-white/80 text-[10px] font-bold mt-1 uppercase tracking-tighter">Хямдрал 20% хүртэл</p>
+                  </div>
+                </div>
+
+                {/* Subcategories Grid (Circular) */}
+                {selectedCategory !== 'all' && categories.find(c => c.id === selectedCategory)?.subcategories && (
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Дэд ангилал</h4>
+                      <Link href={`/category/${selectedCategory}`} className="text-[10px] font-black text-[#FF5000] uppercase tracking-widest">Бүгдийг харах</Link>
+                    </div>
+                    <div className="grid grid-cols-3 gap-y-6">
+                      {categories.find(c => c.id === selectedCategory)?.subcategories?.map((sub) => (
+                        <button
+                          key={sub.id}
+                          onClick={() => setSelectedSubcategory(sub.id)}
+                          className="flex flex-col items-center gap-2 group"
+                        >
+                          <div className={`w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center border-2 transition-all ${selectedSubcategory === sub.id ? 'border-[#FF5000] shadow-lg shadow-orange-100' : 'border-transparent group-active:scale-95'}`}>
+                            <div className="text-xl grayscale opacity-80 group-active:grayscale-0 group-active:opacity-100 transition-all">
+                              {/* Using random icon/letter for subcats since data is mocked */}
+                              {sub.name[0]}
+                            </div>
+                          </div>
+                          <span className={`text-[9px] font-bold text-center leading-tight transition-colors ${selectedSubcategory === sub.id ? 'text-[#FF5000]' : 'text-gray-500'}`}>
+                            {sub.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Popular Products Header */}
+                <div className="pt-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-xs font-medium text-gray-900">Онцлох бараа</h4>
+                    <span className="text-[10px] text-gray-400">{filteredProducts.length} бараа</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {filteredProducts.slice(0, 16).map((product) => (
+                      <Link key={product.id} href={`/product/${product.id}`} className="group active:scale-95 transition-transform">
+                        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                          <div className="relative aspect-square bg-gray-50">
+                            <Image src={product.image || '/soyol-logo.png'} alt={product.name} fill className="object-cover" />
+                            {product.stockStatus === 'pre-order' && (
+                              <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-medium px-2 py-0.5 rounded-full">Захиалга</div>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            <h5 className="text-xs font-medium text-gray-800 line-clamp-2 leading-relaxed h-8 mb-1">{product.name}</h5>
+                            <p className="text-sm font-semibold text-black">
+                              {formatCurrency(product.price)}₮
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Existing Content - Hidden on Mobile */}
+        <div className="hidden lg:flex flex-col lg:flex-row gap-8">
           {/* Left Sidebar - Filters */}
           <motion.aside
             initial={{ opacity: 0, x: -20 }}
@@ -233,27 +364,27 @@ export default function CategoriesPage() {
                             placeholder={`${attr.name}-ар хайх...`}
                             value={selectedAttributes[attr._id] || ''}
                             onChange={(e) => {
-                                const newAttrs = { ...selectedAttributes };
-                                if (e.target.value === '') {
-                                    delete newAttrs[attr._id];
-                                } else {
-                                    newAttrs[attr._id] = e.target.value;
-                                }
-                                setSelectedAttributes(newAttrs);
+                              const newAttrs = { ...selectedAttributes };
+                              if (e.target.value === '') {
+                                delete newAttrs[attr._id];
+                              } else {
+                                newAttrs[attr._id] = e.target.value;
+                              }
+                              setSelectedAttributes(newAttrs);
                             }}
                             className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-soyol/20 focus:border-soyol"
                           />
                         )}
                       </div>
                     ))}
-                    
+
                     {Object.keys(selectedAttributes).length > 0 && (
-                        <button
-                            onClick={() => setSelectedAttributes({})}
-                            className="w-full mt-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors font-medium"
-                        >
-                            Шүүлтүүр арилгах
-                        </button>
+                      <button
+                        onClick={() => setSelectedAttributes({})}
+                        className="w-full mt-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                      >
+                        Шүүлтүүр арилгах
+                      </button>
                     )}
                   </div>
                 </div>
@@ -331,8 +462,9 @@ export default function CategoriesPage() {
                       </div>
 
                       {/* Price */}
-                      <p className="text-2xl font-black text-soyol">
-                        {formatPrice(product.price)}
+                      <p className="text-2xl font-black text-soyol tracking-tighter">
+                        {formatCurrency(product.price)}
+                        <span className="text-sm ml-0.5 tracking-normal">₮</span>
                       </p>
 
                       {/* Actions */}

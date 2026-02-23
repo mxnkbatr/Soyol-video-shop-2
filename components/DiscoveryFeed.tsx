@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { X, ShoppingCart, Heart, Plus } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
-import { useCartStore } from '@/lib/store/cartStore';
+import { useCartStore } from '@/store/cartStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 import type { Product } from '@models/Product';
 
@@ -22,6 +23,7 @@ interface ProductStory {
 export default function DiscoveryFeed({ initialProducts }: DiscoveryFeedProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [selectedStory, setSelectedStory] = useState<ProductStory | null>(null);
+  const { t } = useTranslation();
   const addItem = useCartStore((state) => state.addItem);
 
   // Create story captions (poetic descriptions)
@@ -50,7 +52,7 @@ export default function DiscoveryFeed({ initialProducts }: DiscoveryFeedProps) {
 
   const handleAddToCart = (product: Product) => {
     addItem(product);
-    toast.success('Сагсанд нэмэгдлээ!', {
+    toast.success(t('toast', 'addedToCart'), {
       icon: '🛒',
       style: {
         background: '#FF7900',

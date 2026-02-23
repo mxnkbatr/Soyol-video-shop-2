@@ -3,6 +3,8 @@ import { getCollection } from '@/lib/mongodb';
 import { auth } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
 
+import { User } from '@/models/User';
+
 export async function GET(req: NextRequest) {
   try {
     const { userId, phone } = await auth();
@@ -83,6 +85,44 @@ export async function POST(req: NextRequest) {
       if (updatedProduct && (updatedProduct.inventory ?? 0) <= 0) {
         await products.deleteOne({ _id: objectId });
         console.log(`[Orders API] Product ${productId} deleted — inventory reached 0`);
+      }
+    }
+
+    // Silent Registration: Save address if requested
+    if (userId !== 'guest' && body.saveAddress && body.shipping) {
+      try {
+        const users = await getCollection<User>('users');
+        const userObjectId = new ObjectId(userId);
+        
+        // Construct new address object
+        const newAddress = {
+          id: new ObjectId().toString(),
+          city: body.shipping.city || '',
+          district: body.shipping.district || '',
+          label: body.shipping.label || 'Home', // Default label if not provided
+          khoroo: '1', // Default, as form doesn't have it explicitly yet
+          street: body.shipping.address || '',
+          note: body.shipping.notes || '',
+          isDefault: true, // User requested "Save as primary"
+        };
+
+        // Unset previous default if exists
+        await users.updateOne(
+          { _id: userObjectId, 'addresses.isDefault': true },
+          { $set: { 'addresses.$.isDefault': false } }
+        );
+
+        // Add new address
+        await users.updateOne(
+          { _id: userObjectId },
+          { 
+            $push: { addresses: newAddress } as any,
+            $set: { phone: phone || undefined } // Update phone if provided
+          }
+        );
+      } catch (err) {
+        console.error('Failed to save address silently:', err);
+        // Don't fail the order if address save fails
       }
     }
 

@@ -7,13 +7,13 @@ import {
   Package, Globe, Flame, Truck, MessageCircle, Send, LogIn, LogOut,
   Bell, Camera, Monitor, Smartphone, Laptop, Music, Star, Percent, Clock
 } from 'lucide-react';
-import { useCartStore } from '@/lib/store/cartStore';
-import { useWishlistStore } from '@/lib/store/wishlistStore';
+import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@/context/AuthContext';
-import CartDrawer from './CartDrawer';
+
 
 const mainNav = [
   { name: 'Нүүр', href: '/', icon: Globe },
@@ -47,7 +47,7 @@ function FloatingNavbar() {
     <>
       <header
         className={`sticky top-0 z-[50] w-full transition-all duration-300 font-['Inter'] 
-        ${scrolled ? 'bg-white/80 backdrop-blur-lg shadow-sm' : 'bg-white'}`}
+        ${scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-sm' : 'bg-white'}`}
       >
         {/* Row 1: Logo, Search, User Actions */}
         <div className="border-b border-slate-100/50">
@@ -95,8 +95,8 @@ function FloatingNavbar() {
                 )}
               </Link>
 
-              <button
-                onClick={() => setIsCartOpen(true)}
+              <Link
+                href="/cart"
                 className="p-2 text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative"
               >
                 <ShoppingBag className="w-[22px] h-[22px] stroke-[1.5px]" />
@@ -105,7 +105,7 @@ function FloatingNavbar() {
                     {cartItemsCount}
                   </span>
                 )}
-              </button>
+              </Link>
 
               <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block"></div>
 
@@ -162,8 +162,7 @@ function FloatingNavbar() {
         </div>
       </header>
 
-      {/* Cart Drawer */}
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+
 
       {/* Mobile Menu */}
       <AnimatePresence>

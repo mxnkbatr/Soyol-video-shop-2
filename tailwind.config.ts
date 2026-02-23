@@ -38,6 +38,7 @@ const config: Config = {
     },
   },
   plugins: [
+    require('@tailwindcss/typography'),
     // Scrollbar hide utility
     function ({ addUtilities }: any) {
       addUtilities({

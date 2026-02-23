@@ -5,8 +5,9 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Flame } from 'lucide-react';
-import { useCartStore } from '@/lib/store/cartStore';
+import { useCartStore } from '@/store/cartStore';
 import { useLanguage } from '@/context/LanguageContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import toast from 'react-hot-toast';
 
 interface Product {
@@ -28,6 +29,7 @@ interface SpecialProductsCarouselProps {
 
 export default function SpecialProductsCarousel({ products }: SpecialProductsCarouselProps) {
     const { convertPrice, currency } = useLanguage();
+    const { t } = useTranslation();
     const addItem = useCartStore((s) => s.addItem);
     const scrollRef = useRef<HTMLDivElement>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -117,7 +119,7 @@ export default function SpecialProductsCarousel({ products }: SpecialProductsCar
             category: product.category || '',
             stockStatus: (product.stockStatus as 'in-stock' | 'pre-order') || 'in-stock',
         });
-        toast.success('Сагсанд нэмэгдлээ!', {
+        toast.success(t('toast', 'addedToCart'), {
             style: { borderRadius: '16px', background: '#1e293b', color: '#fff', fontWeight: 600 },
             iconTheme: { primary: '#f97316', secondary: '#fff' },
         });
@@ -133,7 +135,7 @@ export default function SpecialProductsCarousel({ products }: SpecialProductsCar
     if (displayProducts.length === 0) return null;
 
     return (
-        <section className="mb-12 relative">
+        <section className="mb-12 relative hidden lg:block">
             {/* Section Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
@@ -145,7 +147,7 @@ export default function SpecialProductsCarousel({ products }: SpecialProductsCar
                     </div>
                     <div>
                         <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
-                            Онцгой бүтээгдэхүүн
+                            Онцгой бараанууд
                         </h2>
                         <p className="text-sm lg:text-base text-slate-500 font-medium mt-0.5">
                             Таны анхаарлыг татах бараанууд
@@ -159,8 +161,8 @@ export default function SpecialProductsCarousel({ products }: SpecialProductsCar
                         onClick={() => { scroll('left'); stopAutoScroll(); startAutoScroll(); }}
                         disabled={!canScrollLeft}
                         className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 ${canScrollLeft
-                                ? 'bg-white border-2 border-slate-200 text-slate-700 hover:bg-orange-50 hover:border-orange-400 hover:text-orange-600 shadow-sm hover:shadow-md'
-                                : 'bg-slate-100 border-2 border-slate-100 text-slate-300 cursor-default'
+                            ? 'bg-white border-2 border-slate-200 text-slate-700 hover:bg-orange-50 hover:border-orange-400 hover:text-orange-600 shadow-sm hover:shadow-md'
+                            : 'bg-slate-100 border-2 border-slate-100 text-slate-300 cursor-default'
                             }`}
                     >
                         <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
@@ -169,8 +171,8 @@ export default function SpecialProductsCarousel({ products }: SpecialProductsCar
                         onClick={() => { scroll('right'); stopAutoScroll(); startAutoScroll(); }}
                         disabled={!canScrollRight}
                         className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 ${canScrollRight
-                                ? 'bg-white border-2 border-slate-200 text-slate-700 hover:bg-orange-50 hover:border-orange-400 hover:text-orange-600 shadow-sm hover:shadow-md'
-                                : 'bg-slate-100 border-2 border-slate-100 text-slate-300 cursor-default'
+                            ? 'bg-white border-2 border-slate-200 text-slate-700 hover:bg-orange-50 hover:border-orange-400 hover:text-orange-600 shadow-sm hover:shadow-md'
+                            : 'bg-slate-100 border-2 border-slate-100 text-slate-300 cursor-default'
                             }`}
                     >
                         <ChevronRight className="w-5 h-5" strokeWidth={2.5} />
@@ -196,19 +198,20 @@ export default function SpecialProductsCarousel({ products }: SpecialProductsCar
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: i * 0.06, duration: 0.5 }}
-                        className="flex-shrink-0 w-[280px] sm:w-[300px] lg:w-[320px]"
+                        className="flex-shrink-0 w-[160px] sm:w-[200px] lg:w-[280px]"
                     >
                         <div className="group relative bg-white rounded-3xl overflow-hidden border border-slate-100/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgba(249,115,22,0.12)] transition-all duration-500 hover:-translate-y-1">
                             {/* Image Container */}
                             <Link href={`/product/${product.id || product._id}`} draggable={false}>
-                                <div className="relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50">
+                                <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50">
                                     <Image
                                         src={product.image || '/soyol-logo.png'}
                                         alt={product.name}
                                         fill
                                         draggable={false}
-                                        className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                                        sizes="(max-width: 640px) 280px, (max-width: 1024px) 300px, 320px"
+                                        className="object-contain p-6 transition-transform duration-700 group-hover:scale-110"
+                                        sizes="(max-width: 768px) 100vw, 50vw"
+                                        priority
                                     />
 
                                     {/* Dark gradient overlay on hover */}
@@ -217,8 +220,8 @@ export default function SpecialProductsCarousel({ products }: SpecialProductsCar
                                     {/* Stock Badge - Large & Prominent */}
                                     {product.stockStatus === 'in-stock' && product.inventory !== undefined && (
                                         <div className={`absolute top-4 left-4 px-3 py-1.5 rounded-xl text-xs font-extrabold uppercase tracking-wider backdrop-blur-md shadow-lg ${product.inventory < 10
-                                                ? 'bg-red-500/90 text-white shadow-red-500/30'
-                                                : 'bg-white/90 text-slate-700 shadow-black/5'
+                                            ? 'bg-red-500/90 text-white shadow-red-500/30'
+                                            : 'bg-white/90 text-slate-700 shadow-black/5'
                                             }`}>
                                             {product.inventory < 10 ? `${product.inventory} ширхэг` : '10+ ширхэг'}
                                         </div>

@@ -20,7 +20,7 @@
   --brand-primary-dark: #d46610;
   --brand-secondary: #1a1a1a;
   --brand-accent: #F57E20;
-  
+
   /* Glassmorphism */
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(245, 126, 32, 0.1);
@@ -114,8 +114,15 @@ body {
 
 /* Floating */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .float-gentle:hover {
@@ -124,8 +131,15 @@ body {
 
 /* Icon Bounce Animation */
 @keyframes iconBounce {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-4px) scale(1.05); }
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-4px) scale(1.05);
+  }
 }
 
 .icon-bounce:hover {
@@ -134,8 +148,15 @@ body {
 
 /* Smooth Icon Float */
 @keyframes iconFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 .icon-float:hover {
@@ -178,8 +199,13 @@ body {
 
 /* Shimmer Animation for Search Bar */
 @keyframes shimmer {
-  0% { background-position: 200% center; }
-  100% { background-position: -200% center; }
+  0% {
+    background-position: 200% center;
+  }
+
+  100% {
+    background-position: -200% center;
+  }
 }
 
 .animate-shimmer-border {
@@ -193,6 +219,7 @@ body {
     touch-action: manipulation;
     -ms-touch-action: manipulation;
   }
+
   * {
     touch-action: manipulation;
   }
@@ -205,21 +232,31 @@ body {
 
 /* Mobile Responsive Utilities */
 @media (max-width: 640px) {
+
   /* Prevent horizontal scroll on mobile */
   body {
     overflow-x: hidden;
   }
 
   /* Better touch targets for mobile */
-  button, a {
+  button,
+  a {
     min-height: 44px;
     min-width: 44px;
   }
 
   /* Optimize text readability on mobile */
-  h1 { font-size: 1.75rem; }
-  h2 { font-size: 1.5rem; }
-  h3 { font-size: 1.25rem; }
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
 
   /* Better spacing on mobile */
   .container {
@@ -238,6 +275,7 @@ body {
 
 /* Prevent zoom on input focus (iOS) */
 @media (max-width: 768px) {
+
   input[type="text"],
   input[type="email"],
   input[type="tel"],
@@ -352,6 +390,7 @@ body {
 
 /* Touch-friendly buttons on mobile */
 @media (max-width: 768px) {
+
   button,
   a.button,
   .button {
@@ -383,6 +422,7 @@ body {
 
 /* Better focus states for accessibility */
 @media (max-width: 768px) {
+
   button:focus-visible,
   a:focus-visible,
   input:focus-visible,
@@ -414,6 +454,7 @@ body {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -432,11 +473,13 @@ body {
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 .search-dropdown-enter {
   animation: searchDropdownFade 0.2s ease-out;
 }

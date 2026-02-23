@@ -25,7 +25,6 @@ type Product = {
   featured?: boolean;
   brand?: string;
   model?: string;
-  warranty?: string;
   delivery?: string;
   paymentMethods?: string;
   createdAt: string;
@@ -63,7 +62,6 @@ export default function AdminDashboard() {
     inventory: '0',
     brand: '',
     model: '',
-    warranty: '12 сар',
     delivery: 'Үнэгүй',
     paymentMethods: 'QPay, SocialPay, Card',
     attributes: {} as Record<string, string>,
@@ -129,7 +127,6 @@ export default function AdminDashboard() {
         inventory: String(product.inventory || 0),
         brand: product.brand || '',
         model: product.model || '',
-        warranty: product.warranty || '12 сар',
         delivery: product.delivery || 'Үнэгүй',
         paymentMethods: product.paymentMethods || 'QPay, SocialPay, Card',
         attributes: product.attributes || {}
@@ -147,7 +144,6 @@ export default function AdminDashboard() {
         inventory: '0',
         brand: '',
         model: '',
-        warranty: '12 сар',
         delivery: 'Үнэгүй',
         paymentMethods: 'QPay, SocialPay, Card',
         attributes: {}
@@ -170,7 +166,6 @@ export default function AdminDashboard() {
       inventory: '0',
       brand: '',
       model: '',
-      warranty: '12 сар',
       delivery: 'Үнэгүй',
       paymentMethods: 'QPay, SocialPay, Card',
       attributes: {}
@@ -192,7 +187,6 @@ export default function AdminDashboard() {
       inventory: parseInt(formData.inventory) || 0,
       brand: formData.brand,
       model: formData.model,
-      warranty: formData.warranty,
       delivery: formData.delivery,
       paymentMethods: formData.paymentMethods,
       attributes: formData.attributes,
@@ -631,10 +625,7 @@ export default function AdminDashboard() {
                     <input type="text" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all" placeholder="Жишээ: Aputure 120d II" />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Баталгаа</label>
-                    <input type="text" value={formData.warranty} onChange={(e) => setFormData({ ...formData, warranty: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all" placeholder="Жишээ: 12 сар" />
-                  </div>
+
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Хүргэлт</label>

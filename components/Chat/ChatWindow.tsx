@@ -6,6 +6,7 @@ import { Message } from '@/models/Message';
 import Image from 'next/image';
 import useSWR from 'swr';
 import { useUser } from '@/context/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import UserStatus from './UserStatus';
 import UserHistorySidebar from './UserHistorySidebar';
 
@@ -27,13 +28,14 @@ interface ChatWindowProps {
     onBack: () => void;
 }
 
-const fetcher = ([url, guestId]: [string, string | undefined]) => 
+const fetcher = ([url, guestId]: [string, string | undefined]) =>
     fetch(url, {
         headers: guestId ? { 'x-guest-id': guestId } : {}
     }).then((res) => res.json());
 
 export default function ChatWindow({ otherUser, guestId, onStartCall, onBack }: ChatWindowProps) {
     const { user } = useUser();
+    const { t } = useTranslation();
     const [newMessage, setNewMessage] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [sending, setSending] = useState(false);
@@ -61,7 +63,7 @@ export default function ChatWindow({ otherUser, guestId, onStartCall, onBack }: 
         try {
             await fetch('/api/messages', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     ...(guestId ? { 'x-guest-id': guestId } : {})
                 },
@@ -81,9 +83,9 @@ export default function ChatWindow({ otherUser, guestId, onStartCall, onBack }: 
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-slate-900/80 relative">
+        <div className="flex-1 flex flex-col h-full bg-transparent relative">
             {/* Header */}
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between bg-slate-800/50 backdrop-blur-md">
                 <div className="flex items-center gap-3">
                     <button onClick={onBack} className="md:hidden p-2 -ml-2 text-slate-400 hover:text-white">
                         <ArrowLeft className="w-5 h-5" />
@@ -182,7 +184,7 @@ export default function ChatWindow({ otherUser, guestId, onStartCall, onBack }: 
                         type="text"
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type a message..."
+                        placeholder={t('chat', 'typeMessage')}
                         className="flex-1 bg-slate-800 border-none rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:ring-1 focus:ring-orange-500/50"
                     />
                     <button

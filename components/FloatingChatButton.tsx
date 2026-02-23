@@ -12,29 +12,29 @@ export default function FloatingChatButton() {
     const [isOpen, setIsOpen] = useState(false);
     const lastScrollY = useRef(0);
     const [yOffset, setYOffset] = useState(0);
-    
+
     // Framer Motion scroll tracking
     const { scrollY } = useScroll();
-    
+
     // Create a springy motion value for the vertical offset
     const springY = useSpring(0, { stiffness: 100, damping: 20 });
 
     useMotionValueEvent(scrollY, "change", (latest) => {
         const diff = latest - lastScrollY.current;
-        
+
         // Only react to significant scrolls
         if (Math.abs(diff) > 5) {
             // Scroll down -> Move UP (negative Y)
             // Scroll up -> Move DOWN (positive Y)
             const targetOffset = diff > 0 ? -40 : 40;
             springY.set(targetOffset);
-            
+
             // Immediately start returning to 0 for a "bounce" or "inertia" effect
             setTimeout(() => {
                 springY.set(0);
             }, 150);
         }
-        
+
         lastScrollY.current = latest;
     });
 

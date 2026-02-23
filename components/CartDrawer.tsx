@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
-import { useCartStore, type CartItem } from '@/lib/store/cartStore';
+import { useCartStore, type CartItem } from '@/store/cartStore';
 import { formatPrice } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
 
@@ -113,7 +113,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                           <h4 className="font-bold text-slate-900 text-sm line-clamp-2 leading-snug group-hover:text-orange-600 transition-colors">
                             {item.name}
                           </h4>
-                          <p className="text-[#FF5722] font-black text-sm mt-1.5">
+                          <p className="text-orange-500 font-bold text-sm mt-1.5">
                             {formatPrice(item.price)}
                           </p>
                         </div>
@@ -154,7 +154,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               <div className="p-6 bg-slate-50 border-t border-slate-100 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-bold text-sm uppercase tracking-wider">Нийт дүн</span>
-                  <span className="text-2xl font-black text-[#FF5722]">
+                  <span className="text-2xl font-bold text-orange-500">
                     {formatPrice(totalPrice)}
                   </span>
                 </div>
