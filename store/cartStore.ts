@@ -5,6 +5,7 @@ import type { Product } from '@models/Product';
 export interface CartItem extends Product {
   quantity: number;
   selected: boolean; // New: flag for Taobao-style selection
+  isReady?: boolean; // New: flag for stock availability
 }
 
 interface CartState {
@@ -138,16 +139,53 @@ export const useCartStore = create<CartState>()(
         if (typeof window === 'undefined') return;
 
         const key = 'soyol-cart-storage';
-        const currentData = currentStorage?.getItem(key);
 
         if (isAuth) {
-          // Switching to localStorage: copy data from session → local
-          if (currentData) {
-            localStorage.setItem(key, currentData);
+          // Switching to localStorage: Merge session items with saved local items
+          const sessionItems = get().items;
+          let localItems: CartItem[] = [];
+
+          try {
+            const localData = localStorage.getItem(key);
+            if (localData) {
+              const parsed = JSON.parse(localData);
+              if (parsed.state && Array.isArray(parsed.state.items)) {
+                localItems = parsed.state.items;
+              }
+            }
+          } catch (e) {
+            console.error('Failed to parse local cart:', e);
           }
+
+          // Merge logic: Combine items, sum quantities for duplicates
+          const mergedMap = new Map<string, CartItem>();
+          
+          // Start with local items
+          localItems.forEach(item => mergedMap.set(item.id, item));
+          
+          // Merge session items
+          sessionItems.forEach(item => {
+            if (mergedMap.has(item.id)) {
+              const existing = mergedMap.get(item.id)!;
+              mergedMap.set(item.id, { 
+                ...item, // Prefer session properties (e.g. updated price/name)
+                quantity: existing.quantity + item.quantity 
+              });
+            } else {
+              mergedMap.set(item.id, item);
+            }
+          });
+          
+          const finalItems = Array.from(mergedMap.values());
+
+          // Update storage pointer and state
           currentStorage = localStorage;
+          set({ items: finalItems });
+          
+          // Clear session storage to avoid duplicates/confusion
+          sessionStorage.removeItem(key);
         } else {
-          // Switching to sessionStorage: clear localStorage cart
+          // Switching to sessionStorage (Logout): Clear user data
           localStorage.removeItem(key);
           sessionStorage.removeItem(key);
           currentStorage = sessionStorage;

@@ -38,10 +38,7 @@ async function listModels() {
         "gemini-2.5-flash"
     ];
 
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    console.log("Testing models with API Key ending in ...", apiKey ? apiKey.slice(-4) : 'NONE');
+    console.log("Testing models with API Key ending in ...", process.env.GOOGLE_GENERATIVE_AI_API_KEY ? process.env.GOOGLE_GENERATIVE_AI_API_KEY.slice(-4) : 'NONE');
     
     for (const modelName of candidates) {
         try {

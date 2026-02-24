@@ -11,10 +11,6 @@ async function testChatActions() {
           messages: [{ role: 'user', content: message }]
         })
       });
-      if (!response.ok) {
-        console.error(`Error: ${response.status} ${response.statusText}`);
-        return '';
-      }
       const text = await response.text();
       console.log('AI Response:', text);
       return text;

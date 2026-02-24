@@ -13,9 +13,86 @@ const google = createGoogleGenerativeAI({
   // Allow streaming responses up to 30 seconds
   export const maxDuration = 30;
 
+  // Helper function to convert UI messages to CoreMessages
+  function convertToCoreMessages(messages: any[]): any[] {
+    const coreMessages: any[] = [];
+  
+    for (const message of messages) {
+      const { role, content, toolInvocations, experimental_attachments } = message;
+  
+      if (role === 'system') {
+        coreMessages.push({ role: 'system', content: content || '' });
+      } else if (role === 'user') {
+        if (experimental_attachments?.length) {
+            const contentParts: any[] = [];
+            if (content) {
+                contentParts.push({ type: 'text', text: content });
+            }
+            
+            experimental_attachments.forEach((att: any) => {
+                 if (att.contentType?.startsWith('image/') || att.url?.startsWith('data:image/')) {
+                     contentParts.push({ type: 'image', image: att.url });
+                 }
+                 // Add other types if needed
+            });
+            coreMessages.push({ role: 'user', content: contentParts });
+        } else {
+            coreMessages.push({ role: 'user', content: content || '' });
+        }
+      } else if (role === 'assistant') {
+        const toolCalls = toolInvocations?.map((invocation: any) => ({
+          type: 'tool-call',
+          toolCallId: invocation.toolCallId,
+          toolName: invocation.toolName,
+          args: invocation.args,
+        })) || [];
+  
+        const toolResults = toolInvocations?.filter((invocation: any) => 'result' in invocation).map((invocation: any) => ({
+          type: 'tool-result',
+          toolCallId: invocation.toolCallId,
+          toolName: invocation.toolName,
+          result: invocation.result,
+        })) || [];
+  
+        if (toolCalls.length > 0) {
+          coreMessages.push({
+            role: 'assistant',
+            content: [
+              { type: 'text', text: content || '' },
+              ...toolCalls,
+            ].filter((part: any) => part.type === 'tool-call' || (part.type === 'text' && part.text)),
+          });
+  
+          if (toolResults.length > 0) {
+            coreMessages.push({
+              role: 'tool',
+              content: toolResults,
+            });
+          }
+        } else {
+          coreMessages.push({ role: 'assistant', content: content || '' });
+        }
+      }
+    }
+  
+    return coreMessages;
+  }
+
   export async function POST(req: Request) {
     try {
       const { messages } = await req.json();
+      
+      const coreMessages = convertToCoreMessages(messages);
+      
+      // LOGGING for debug
+      try {
+         const fs = await import('fs');
+         const path = await import('path');
+         const logPath = path.join(process.cwd(), 'debug-log.txt');
+         fs.appendFileSync(logPath, `\n\n--- Request ${new Date().toISOString()} ---\n`);
+         fs.appendFileSync(logPath, JSON.stringify(coreMessages, null, 2));
+      } catch (e) { console.error('Logging failed', e); }
+
       const session = await auth();
       let userContext = '';
 
@@ -38,19 +115,47 @@ const google = createGoogleGenerativeAI({
         }
       }
 
-      let result;
-      
-      // Attempt to stream text
-      console.log('Starting streamText with model: models/gemini-flash-lite-latest');
-      try {
-        result = await streamText({
-            model: google('models/gemini-flash-lite-latest'), // Switch to working LITE model
-            // @ts-ignore
-            maxSteps: 3, // Allow multi-step tool execution
-            maxRetries: 1, // Allow 1 retry for transient errors
-            messages,
-            tools: {
-             addToCart: tool({
+      const result = await streamText({
+    model: google('gemini-2.5-flash'),
+    system: `
+    You are the "Loyal Assistant Operator" for Soyol Video Shop, a premium electronics and video equipment store in Mongolia.
+    
+    Your Personality:
+    - Professional yet friendly and approachable.
+    - Helpful, proactive, and knowledgeable about video gear (cameras, lights, drones, audio).
+    - You speak fluent Mongolian (primary) and English.
+    - Always address the user politely.
+    
+    Your Capabilities:
+    - Help users find products using the 'searchProducts' tool.
+    - Check stock availability using 'checkInventory'.
+    - Add items to the cart using 'addToCart' (only if the user explicitly confirms).
+    - Guide users to specific pages using 'navigateToPage'.
+    
+    Output Requirements:
+    - ALWAYS give a clear final answer in Mongolian after any tool call.
+    - NEVER finish the conversation with tool-calls. Always continue and return a final assistant message.
+    - When 'searchProducts' returns products (array), present a short helpful summary,
+      THEN for each relevant product include a card marker in this exact format on its own line:
+        [PRODUCT_CARD: {"id":"...","name":"...","price":1234,"image":"..."}]
+      Only include id, name, price, image keys in the card JSON.
+    - Do NOT print raw tool call JSON; summarize first, then include PRODUCT_CARD tags.
+    - Use friendly, concise sentences. Avoid repeating the same content.
+    - If products are found, start the response with: "Танд дараах бараануудыг санал болгож байна ✨"
+    - Always end your response with: "Танд өөр туслах зүйл байна уу? 😊"
+    - Never say phrases implying no warranty (e.g., "баталгаа байхгүй"). Use helpful phrasing instead.
+    - If the user sends an image, infer the likely product type from the image and use 'searchProducts' with a concise Mongolian query.
+    
+    Context:
+    - Today's date is ${new Date().toLocaleDateString('mn-MN')}.
+    ${userContext ? '- User Context: ' + userContext : ''}
+    `,
+    // @ts-ignore
+    maxSteps: 8,
+        messages: coreMessages,
+        toolChoice: 'auto',
+        tools: {
+            addToCart: tool({
               description: 'Add a product to the shopping cart. You MUST provide the productId.',
               parameters: z.object({
                 productId: z.string(),
@@ -174,63 +279,10 @@ const google = createGoogleGenerativeAI({
               },
             } as any),
           },
-        system: `
-          Чи бол 'Soyol' их дэлгүүрийн ухаалаг туслах 'Soyol AI' юм. Чи зөвхөн видео тоног төхөөрөмж биш, бүх төрлийн бараа зардаг дэлгүүрийн туслах.
 
-          Үндсэн зарчмууд:
-          1. Борлуулалтын арга барил (Sales-Oriented):
-             - Дэлгүүрээ хоосон магтах хэрэггүй ("Манайх хамгийн шилдэг нь", "Бүх зүйл бий" гэх мэт ерөнхий магтаал БҮҮ хэл).
-             - Үүний оронд бараа бүтээгдэхүүнийг идэвхтэй санал болгож, хэрэглэгчийг худалдан авалт хийхэд "шахсан", ятгасан хариулт өг.
-             - Жишээ нь: "Энэ загвар танд яг тохирно, одоо л авахгүй бол дуусах магадлалтай", "Таны хайж байгаа чанар яг энд байна".
-
-          2. Чанар ба Сэтгэл ханамж:
-             - Барааны чанарт бүрэн итгэлтэй байж, хэрэглэгчийн сэтгэл ханамжийг амла ("Таны сэтгэлд 100% нийцнэ", "Чанарын хувьд эргэлзэх хэрэггүй", "Амьдралд тань бодит үнэ цэнэ нэмнэ").
-             - Хэрэглэгчид барааны давуу талыг мэдрүүлж, авах хүслийг нь төрүүл.
-             - Баталгаат хугацааны талаар асуувал: "Албан ёсны цаасан баталгаа байхгүй ч, барааны чанарт бид бүрэн итгэлтэй байдаг. Таны сэтгэл ханамж бидний баталгаа юм" гэсэн утгаар хариул.
-
-          3. Харилцааны хэв маяг: 
-             - Өөрийгөө 'Soyol AI' гэж танилцуул.
-             - Үргэлж 'Та' гэж хүндэтгэлтэй харьц.
-             - Өөртөө итгэлтэй, ятган үнэмшүүлэх (persuasive), шийдэмгий өнгө аястай бай.
-
-          4. Ажиллах логик (Autonomous Function Calling):
-             - Хэрэглэгч бараа хайх, үнэ асуух үед: ЗААВАЛ 'searchProducts' функцийг ашигла.
-             - Хэрэглэгч "Захиалгаа харъя", "Сагсаа үзье", "Нүүр хуудас руу буцъя" гэх мэтээр хуудас шилжихийг хүсвэл: ЗААВАЛ 'navigateToPage' функцийг ашигла.
-             - Хэрэглэгч "Сагсанд хийе", "Авъя" гэж тодорхой барааг хэлвэл:
-               a. Хэрэв барааны ID мэдэгдэж байвал 'addToCart' функцийг шууд ашигла.
-               b. Хэрэв барааны ID мэдэгдэхгүй байвал эхлээд 'searchProducts' ашиглаж олоод, дараа нь 'addToCart' ашигла.
-             - Барааны үлдэгдэл шалгах бол 'checkInventory' ашигла.
-             
-             АНХААР: Үйлдлийг гүйцэтгэхийн тулд зөвхөн Function Call ашигла. JSON форматтай текст хариулт хэзээ ч бүү бич.
-             Функцийн хариуг хэрэглэгчид дамжуулахдаа [ACTION:...] хэсгийг өөрчлөхгүйгээр оруул.
-
-          5. Хариултын бүтэц:
-             - Олдсон барааны мэдээллийг харуулахдаа:
-           [PRODUCT_CARD: {"id": "барааны_id", "name": "барааны_нэр", "price": үнэ, "image": "зургийн_холбоос"}]
-             - Функцээс ирсэн [ACTION:...] кодыг хэрэглэгч рүү илгээх хариултдаа ЗААВАЛ хэвээр нь дамжуул.
-           
-        6. Хүргэлт, захиалгын мэдээлэл:
-           - Хүргэлтийн захиалга авах утас: 77-181818
-           - Бэлэн байгаа барааг өдөрт нь хүргэнэ.
-           - Захиалгаар ирэх бараа 7-14 хоногт ирнэ.
-           
-        7. Хаяг бүртгүүлэх, баталгаажуулах:
-           - Хэрэглэгчээс хаяг асуухдаа: "Та өмнөх хаяг болох [Хадгалсан хаяг] дээрээ авах уу, эсвэл шинэ хаяг бүртгүүлэх үү?" гэж асуу.
-           - Хэрэглэгч хаягаа асуувал хадгалсан хаягуудыг жагсааж хэл.
-           - Хэрэглэгч тодорхой хаягаар авахыг хүсвэл [ADDRESS_CONFIRMATION] карт харуул:
-             [ADDRESS_CONFIRMATION: {"id": "address_id", "label": "хаягийн_нэр", "fullText": "бүрэн_хаяг"}]
-           - Хэрэглэгч шинэ хаяг оруулахыг хүсвэл 'navigateToPage' ашиглан checkout хуудас руу шилжүүл.
-
-        ${userContext ? `8. Хэрэглэгчийн мэдээлэл:${userContext}
-           Хэрэглэгч "Миний хаяг хаана билээ?" гэж асуувал дээрх хаягийг хэлж өгнө үү.` : ''}
-      `,
     });
-      } catch (error) { 
-        console.error('streamText error:', error);
-        throw error;
-      }
 
-    return result.toDataStreamResponse();
+      return result.toUIMessageStreamResponse();
   } catch (error: any) {
     // Enhanced Error Logging
     console.error('Chat API Error Details:', {
@@ -246,6 +298,9 @@ const google = createGoogleGenerativeAI({
     } else if (error.status === 429 || error.message?.includes('Quota') || error.message?.includes('429')) {
         console.error('CRITICAL: Quota exceeded (429)');
         return new Response("Уучлаарай, систем хэт ачаалалтай байна. Та хэсэг хугацааны дараа дахин оролдоно уу. (Quota Exceeded)", { status: 200 });
+    } else if (error.status === 404 || /model not found/i.test(error.message || '')) {
+        console.error('CRITICAL: Model not found (404)');
+        return new Response("Түр хүлээгээрэй, холболтоо шалгаж байна...", { status: 200 });
     }
 
     return new Response(JSON.stringify({ error: 'Failed to process chat', details: error.message, stack: error.stack }), { status: 500 });

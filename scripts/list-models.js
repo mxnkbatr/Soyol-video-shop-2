@@ -1,26 +1,23 @@
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-require('dotenv').config({ path: '.env.local' });
+const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyClJvjtJIpYOJRM3OX553VRkA7VK8OJy0k';
 
 async function listModels() {
-  const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Dummy model to get client? No.
-    // There is no listModels method on client instance directly in recent versions?
-    // Actually, it's likely not exposed in the high-level SDK easily.
-    // But let's try a simple generation with 'gemini-pro' to see if it works.
-    
-    console.log('Testing gemini-pro...');
-    const result = await model.generateContent("Hello");
-    console.log('gemini-pro response:', result.response.text());
-    
-    console.log('Testing gemini-1.5-flash...');
-    const modelFlash = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const resultFlash = await modelFlash.generateContent("Hello");
-    console.log('gemini-1.5-flash response:', resultFlash.response.text());
-
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.models) {
+      console.log('Available models:');
+      data.models.forEach(model => {
+        if (model.supportedGenerationMethods.includes('generateContent')) {
+           console.log(`- ${model.name} (${model.displayName})`);
+        }
+      });
+    } else {
+      console.error('No models found or error:', data);
+    }
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error fetching models:', error);
   }
 }
 

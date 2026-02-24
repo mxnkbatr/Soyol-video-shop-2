@@ -4,7 +4,7 @@ const { Readable } = require('stream');
 async function testChat() {
   console.log('Testing Chat API...');
   try {
-    const response = await fetch('http://localhost:3000/api/chat', {
+    const response = await fetch('http://localhost:3001/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

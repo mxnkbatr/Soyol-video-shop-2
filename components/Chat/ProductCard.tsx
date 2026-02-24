@@ -52,6 +52,21 @@ export default function ProductCard({ product }: ProductCardProps) {
                     <h4 className="font-bold text-slate-900 text-sm line-clamp-2 mb-1 leading-tight">
                         {product.name}
                     </h4>
+                    <div className="flex items-center gap-1 mb-2">
+                        {[...Array(5)].map((_, i) => (
+                            <Star
+                                key={i}
+                                className={`w-3.5 h-3.5 ${
+                                    i < Math.round(product.rating || 0)
+                                        ? 'text-yellow-400 fill-yellow-400'
+                                        : 'text-slate-200 fill-slate-200'
+                                }`}
+                            />
+                        ))}
+                        <span className="text-xs text-slate-400 ml-1">
+                            {product.rating || '0.0'}
+                        </span>
+                    </div>
                     <div className="flex items-center justify-between mt-2">
                         <span className="font-bold text-orange-600 text-sm">
                             {formatPrice(product.price)}

@@ -21,11 +21,11 @@ async function getUser(req: Request) {
     }
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: any }) {
     const userId = await getUser(req);
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     
-    const { id } = params;
+    const { id } = await params;
     const data = await req.json();
 
     const usersCollection = await getCollection('users');
@@ -67,11 +67,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return NextResponse.json({ success: true });
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const userId = await getUser(req);
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     
-    const { id } = params;
+    const { id } = await params;
     const usersCollection = await getCollection('users');
 
     const result = await usersCollection.updateOne(
