@@ -47,7 +47,7 @@ export default function CategoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<string>('newest');
-  
+
   const addItem = useCartStore((state) => state.addItem);
 
   // Fetch products, categories, and attributes from API
@@ -60,9 +60,32 @@ export default function CategoriesPage() {
           fetch('/api/attributes'),
         ]);
 
-        const productsData = await productsRes.json();
-        const categoriesData = await categoriesRes.json();
-        const attributesData = await attributesRes.json();
+        if (!productsRes.ok || !categoriesRes.ok || !attributesRes.ok) {
+          console.error('One or more fetch requests failed', {
+            products: productsRes.status,
+            categories: categoriesRes.status,
+            attributes: attributesRes.status
+          });
+        }
+
+        const productsText = await productsRes.text();
+        const categoriesText = await categoriesRes.text();
+        const attributesText = await attributesRes.text();
+
+        let productsData, categoriesData, attributesData;
+
+        try {
+          productsData = JSON.parse(productsText);
+          categoriesData = JSON.parse(categoriesText);
+          attributesData = JSON.parse(attributesText);
+        } catch (parseError) {
+          console.error('JSON Parse Error. Server returned:', {
+            products: productsText.substring(0, 100),
+            categories: categoriesText.substring(0, 100),
+            attributes: attributesText.substring(0, 100)
+          });
+          throw parseError;
+        }
 
         // API returns { products, nextCursor, hasMore }
         setProducts(productsData.products || []);
@@ -112,7 +135,7 @@ export default function CategoriesPage() {
       case 'newest':
       default:
         // Assuming products are returned sorted by newest from API or have createdAt
-        return 0; 
+        return 0;
     }
   });
 
@@ -152,9 +175,9 @@ export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-12 lg:pt-12">
       <div className="max-w-7xl mx-auto lg:px-8">
-        
+
         <div className="flex flex-col lg:flex-row gap-8">
-          
+
           {/* LEFT SIDEBAR (Desktop) */}
           <aside className="hidden lg:block w-72 flex-shrink-0">
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-24">
@@ -172,19 +195,17 @@ export default function CategoriesPage() {
                     setSelectedSubcategory('all');
                     setExpandedCategory(null);
                   }}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
-                    selectedCategory === 'all'
+                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${selectedCategory === 'all'
                       ? 'bg-soyol text-white shadow-md shadow-orange-200'
                       : 'hover:bg-gray-50 text-gray-700'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-xl">🏠</span>
                     <span className="font-bold text-sm">Бүгд</span>
                   </div>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    selectedCategory === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-                  }`}>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${selectedCategory === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                    }`}>
                     {products.length}
                   </span>
                 </button>
@@ -200,11 +221,10 @@ export default function CategoriesPage() {
                           setExpandedCategory(category.id);
                         }
                       }}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
-                        selectedCategory === category.id
+                      className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${selectedCategory === category.id
                           ? 'bg-soyol text-white shadow-md shadow-orange-200'
                           : 'hover:bg-gray-50 text-gray-700'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-xl">{getEmoji(category.id)}</span>
@@ -212,16 +232,14 @@ export default function CategoriesPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {category.productCount !== undefined && (
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                            selectedCategory === category.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-                          }`}>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${selectedCategory === category.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                            }`}>
                             {category.productCount}
                           </span>
                         )}
                         {category.subcategories && category.subcategories.length > 0 && (
-                          <ChevronDown className={`w-4 h-4 transition-transform ${
-                            expandedCategory === category.id ? 'rotate-180' : ''
-                          }`} />
+                          <ChevronDown className={`w-4 h-4 transition-transform ${expandedCategory === category.id ? 'rotate-180' : ''
+                            }`} />
                         )}
                       </div>
                     </button>
@@ -239,11 +257,10 @@ export default function CategoriesPage() {
                               <button
                                 key={sub.id}
                                 onClick={() => setSelectedSubcategory(sub.id)}
-                                className={`w-full text-left py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
-                                  selectedSubcategory === sub.id
+                                className={`w-full text-left py-2 px-3 rounded-lg text-xs font-bold transition-colors ${selectedSubcategory === sub.id
                                     ? 'text-soyol bg-orange-50'
                                     : 'text-gray-500 hover:text-gray-900'
-                                }`}
+                                  }`}
                               >
                                 {sub.name}
                               </button>
@@ -260,7 +277,7 @@ export default function CategoriesPage() {
 
           {/* MAIN CONTENT */}
           <main className="flex-1 lg:min-w-0">
-            
+
             {/* Header & Filters */}
             <div className="bg-white lg:rounded-3xl p-4 lg:p-6 mb-4 lg:mb-8 shadow-sm border-b lg:border border-gray-100 sticky top-16 lg:static z-20">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -277,17 +294,15 @@ export default function CategoriesPage() {
                   <div className="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-100">
                     <button
                       onClick={() => setViewMode('grid')}
-                      className={`p-2 rounded-lg transition-all ${
-                        viewMode === 'grid' ? 'bg-white text-soyol shadow-sm' : 'text-gray-400 hover:text-gray-600'
-                      }`}
+                      className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-soyol shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                        }`}
                     >
                       <LayoutGrid className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => setViewMode('list')}
-                      className={`p-2 rounded-lg transition-all ${
-                        viewMode === 'list' ? 'bg-white text-soyol shadow-sm' : 'text-gray-400 hover:text-gray-600'
-                      }`}
+                      className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-soyol shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                        }`}
                     >
                       <List className="w-4 h-4" />
                     </button>
@@ -311,11 +326,10 @@ export default function CategoriesPage() {
                 <div className="flex gap-2 px-4 overflow-x-auto scrollbar-hide pb-2 -mb-2">
                   <button
                     onClick={() => setSelectedCategory('all')}
-                    className={`flex-shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                      selectedCategory === 'all'
+                    className={`flex-shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all ${selectedCategory === 'all'
                         ? 'bg-soyol text-white shadow-md shadow-orange-200'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     🏠 Бүгд
                   </button>
@@ -323,11 +337,10 @@ export default function CategoriesPage() {
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`flex-shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                        selectedCategory === cat.id
+                      className={`flex-shrink-0 whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all ${selectedCategory === cat.id
                           ? 'bg-soyol text-white shadow-md shadow-orange-200'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                        }`}
                     >
                       {getEmoji(cat.id)} {cat.name}
                     </button>

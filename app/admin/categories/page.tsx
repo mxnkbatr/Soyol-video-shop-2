@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import {
-  Package, PlusCircle, Pencil, Trash2, Loader2, ArrowLeft,
-  Tag, ShoppingCart, MessageCircle, Menu, X, BarChart3, Layers,
-  Save
+  Package, PlusCircle, Pencil, Trash2, Loader2,
+  Tag, Layers, Save, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,7 +35,6 @@ export default function AdminCategoriesPage() {
   // --- State ---
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modal State
@@ -87,12 +84,12 @@ export default function AdminCategoriesPage() {
 
   const handleDelete = async (slug: string) => {
     if (!confirm('Энэ категорийг устгахдаа итгэлтэй байна уу?')) return;
-    
+
     try {
       const res = await fetch(`/api/categories/${slug}`, {
         method: 'DELETE',
       });
-      
+
       if (res.ok) {
         toast.success('Категори устгагдлаа');
         fetchCategories();
@@ -108,12 +105,12 @@ export default function AdminCategoriesPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-        toast.error('Нэр оруулна уу');
-        return;
+      toast.error('Нэр оруулна уу');
+      return;
     }
     if (!formData.icon) {
-        toast.error('Icon сонгоно уу');
-        return;
+      toast.error('Icon сонгоно уу');
+      return;
     }
 
     setSubmitting(true);
@@ -186,14 +183,14 @@ export default function AdminCategoriesPage() {
 
   const addSubcategory = () => {
     if (!newSubcatName.trim()) return;
-    
+
     // Generate simple ID from name
     const id = newSubcatName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    
+
     // Check for duplicate ID in current list
     if (formData.subcategories.some(sub => sub.id === id)) {
-        toast.error('Ийм нэртэй дэд ангилал байна');
-        return;
+      toast.error('Ийм нэртэй дэд ангилал байна');
+      return;
     }
 
     setFormData(prev => ({
@@ -211,186 +208,106 @@ export default function AdminCategoriesPage() {
   };
 
   // Filter categories
-  const filteredCategories = categories.filter(cat => 
+  const filteredCategories = categories.filter(cat =>
     cat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 flex">
-      {/* Sidebar Overlay (Mobile) */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar - Consistent with Admin Dashboard */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-white/10 transform transition-transform duration-300 ease-in-out
-        lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="h-full flex flex-col p-6">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
-              <span className="text-white font-black text-xl">S</span>
+    <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
+      {/* Header */}
+      <header className="border-b border-white/10 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 lg:hidden">
+                <Layers className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Ангилал удирдах</h1>
+                <p className="text-xs text-slate-400 lg:block hidden">Барааны ангилал болон дэд ангилалууд</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-white leading-none">Soyol</h2>
-              <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mt-1">Admin Panel</p>
-            </div>
-          </div>
-
-          {/* Nav Items */}
-          <nav className="flex-1 space-y-1.5">
-            <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <BarChart3 className="w-5 h-5" />
-              <span className="text-sm font-bold">Хяналтын самбар</span>
-            </Link>
-            <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <Package className="w-5 h-5" />
-              <span className="text-sm font-bold">Бүтээгдэхүүн</span>
-            </Link>
-            <Link href="/admin/attributes" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <Tag className="w-5 h-5" />
-              <span className="text-sm font-bold">Шинж чанар</span>
-            </Link>
-            <Link href="/admin/categories" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 text-amber-400 border-l-2 border-amber-500 transition-all shadow-lg shadow-amber-500/5">
-              <Layers className="w-5 h-5" />
-              <span className="text-sm font-bold">Ангилал</span>
-            </Link>
-            <Link href="/admin/orders" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <ShoppingCart className="w-5 h-5" />
-              <span className="text-sm font-bold">Захиалгууд</span>
-            </Link>
-            <Link href="/admin/messages" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <MessageCircle className="w-5 h-5" />
-              <span className="text-sm font-bold">Мессеж & Дуудлага</span>
-            </Link>
-          </nav>
-
-          {/* Bottom */}
-          <div className="pt-6 border-t border-white/5">
-            <Link href="/" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group">
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-bold">Сайт руу буцах</span>
-            </Link>
+            <button
+              onClick={() => openModal()}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors font-medium shadow-lg shadow-amber-500/20 text-sm"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span className="hidden sm:inline">Ангилал нэмэх</span>
+              <span className="sm:hidden">Нэмэх</span>
+            </button>
           </div>
         </div>
-      </aside>
+      </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header */}
-        <header className="border-b border-white/10 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 lg:hidden transition-colors"
-                >
-                  <Menu className="w-5 h-5" />
-                </button>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 lg:hidden">
-                    <Layers className="w-5 h-5 text-white" />
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scrollbar-hide">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+            <p className="text-sm text-slate-500 font-medium">Ачаалж байна...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
+            {filteredCategories.map((category) => (
+              <div
+                key={category._id || category.id}
+                className="bg-slate-900 rounded-2xl border border-white/5 p-5 hover:border-amber-500/30 transition-all group relative overflow-hidden"
+              >
+                {/* Background decoration */}
+                <div className="absolute -right-6 -top-6 text-[100px] opacity-[0.03] pointer-events-none select-none grayscale group-hover:grayscale-0 transition-all">
+                  {category.icon}
+                </div>
+
+                <div className="flex justify-between items-start mb-4 relative z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-3xl shadow-inner border border-white/5">
+                    {category.icon}
                   </div>
-                  <div>
-                    <h1 className="text-xl font-bold tracking-tight">Ангилал удирдах</h1>
-                    <p className="text-xs text-slate-400 lg:block hidden">Барааны ангилал болон дэд ангилалууд</p>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => openModal(category)}
+                      className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                      title="Засах"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="p-2 rounded-xl hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors"
+                      title="Устгах"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="relative z-10">
+                  <h3 className="text-lg font-bold text-white mb-1">{category.name}</h3>
+                  <div className="flex items-center gap-4 text-xs text-slate-500 font-medium mt-3">
+                    <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-lg">
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>{category.subcategories?.length || 0} дэд ангилал</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-lg">
+                      <Package className="w-3.5 h-3.5" />
+                      <span>{category.productCount || 0} бараа</span>
+                    </div>
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => openModal()}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors font-medium shadow-lg shadow-amber-500/20 text-sm"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Ангилал нэмэх</span>
-                <span className="sm:hidden">Нэмэх</span>
-              </button>
-            </div>
+            ))}
+
+            {filteredCategories.length === 0 && (
+              <div className="col-span-full py-12 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Layers className="w-8 h-8 text-slate-600" />
+                </div>
+                <h3 className="text-lg font-bold text-white">Ангилал олдсонгүй</h3>
+                <p className="text-sm text-slate-500 mt-1">Шинэ ангилал нэмнэ үү.</p>
+              </div>
+            )}
           </div>
-        </header>
+        )}
+      </main>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 scrollbar-hide">
-          {loading ? (
-             <div className="flex flex-col items-center justify-center py-20 gap-4">
-               <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-               <p className="text-sm text-slate-500 font-medium">Ачаалж байна...</p>
-             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
-              {filteredCategories.map((category) => (
-                <div 
-                  key={category._id || category.id} 
-                  className="bg-slate-900 rounded-2xl border border-white/5 p-5 hover:border-amber-500/30 transition-all group relative overflow-hidden"
-                >
-                  {/* Background decoration */}
-                  <div className="absolute -right-6 -top-6 text-[100px] opacity-[0.03] pointer-events-none select-none grayscale group-hover:grayscale-0 transition-all">
-                    {category.icon}
-                  </div>
-
-                  <div className="flex justify-between items-start mb-4 relative z-10">
-                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-3xl shadow-inner border border-white/5">
-                      {category.icon}
-                    </div>
-                    <div className="flex gap-1">
-                      <button 
-                        onClick={() => openModal(category)}
-                        className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-                        title="Засах"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(category.id)}
-                        className="p-2 rounded-xl hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors"
-                        title="Устгах"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="relative z-10">
-                    <h3 className="text-lg font-bold text-white mb-1">{category.name}</h3>
-                    <div className="flex items-center gap-4 text-xs text-slate-500 font-medium mt-3">
-                      <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-lg">
-                        <Layers className="w-3.5 h-3.5" />
-                        <span>{category.subcategories?.length || 0} дэд ангилал</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-lg">
-                        <Package className="w-3.5 h-3.5" />
-                        <span>{category.productCount || 0} бараа</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {filteredCategories.length === 0 && (
-                <div className="col-span-full py-12 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
-                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Layers className="w-8 h-8 text-slate-600" />
-                    </div>
-                    <h3 className="text-lg font-bold text-white">Ангилал олдсонгүй</h3>
-                    <p className="text-sm text-slate-500 mt-1">Шинэ ангилал нэмнэ үү.</p>
-                </div>
-              )}
-            </div>
-          )}
-        </main>
-      </div>
-
-      {/* Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -426,11 +343,10 @@ export default function AdminCategoriesPage() {
                         key={emoji}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, icon: emoji }))}
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${
-                          formData.icon === emoji 
-                          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-110' 
-                          : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                        }`}
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all ${formData.icon === emoji
+                            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-110'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          }`}
                       >
                         {emoji}
                       </button>
@@ -505,6 +421,6 @@ export default function AdminCategoriesPage() {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </div >
   );
 }

@@ -1,46 +1,66 @@
-import useSWR from 'swr';
-import type { Product } from '@models/Product';
+import useSWRInfinite from 'swr/infinite';
+import { Product } from '@/models/Product';
 
-/** API-аас ирсэн бүтээгдэхүүн (createdAt, updatedAt орно) */
-export type ApiProduct = Omit<Product, 'image'> & {
-  image?: string | null;
-  description?: string | null;
-  stockStatus?: string;
-  createdAt?: string | Date;
-  updatedAt?: string | Date;
-};
+interface ProductsResponse {
+  products: Product[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
 
-type ProductsResponse = {
-  products: ApiProduct[];
-  connectionError?: boolean;
-};
+export function useProducts(filters: Record<string, any> = {}) {
+  const getKey = (pageIndex: number, previousPageData: ProductsResponse | null) => {
+    // Reached the end
+    if (previousPageData && !previousPageData.nextCursor) return null;
 
-const fetcher = async (url: string): Promise<ProductsResponse> => {
-  const response = await fetch(url);
-  const data = await response.json();
-  if (!response.ok) throw new Error(data?.error || 'Failed to fetch products');
-  return {
-    products: data.products || [],
-    connectionError: data.connectionError === true,
+    // Build query string
+    const params = new URLSearchParams();
+
+    // Add base filters
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, String(value));
+      }
+    });
+
+    // Add limit
+    params.set('limit', '20');
+
+    // Add cursor if not the first page
+    if (pageIndex > 0 && previousPageData?.nextCursor) {
+      params.set('cursor', previousPageData.nextCursor);
+    }
+
+    return `/api/products?${params.toString()}`;
   };
-};
 
-const PRODUCTS_KEY = '/api/products?limit=50';
+  const { data, error, size, setSize, isValidating, mutate } = useSWRInfinite<ProductsResponse>(
+    getKey,
+    (url: string) => fetch(url).then(res => res.json()),
+    {
+      revalidateFirstPage: false,
+      persistSize: true,
+    }
+  );
 
-export function useProducts() {
-  const { data, error, isLoading } = useSWR<ProductsResponse>(PRODUCTS_KEY, fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    dedupingInterval: 120000,
-    errorRetryCount: 2,
-    revalidateIfStale: true,
-  });
+  const products = data ? data.flatMap(page => page.products) : [];
+  const isLoadingInitialData = !data && !error;
+  const isLoadingMore =
+    isLoadingInitialData ||
+    (size > 0 && data && typeof data[size - 1] === 'undefined');
+  const isEmpty = data?.[0]?.products.length === 0;
+  const isReachingEnd =
+    isEmpty || (data && !data[data.length - 1]?.hasMore);
+  const isRefreshing = isValidating && data && data.length === size;
 
   return {
-    products: data?.products ?? [],
-    isLoading,
-    isError: error,
-    /** Өгөгдлийн сан холбогдохгүй үед (API 200 буцаасан ч бараа хоосон) */
-    connectionError: data?.connectionError === true,
+    products,
+    error,
+    isLoading: isLoadingInitialData,
+    isLoadingMore,
+    size,
+    setSize,
+    isReachingEnd,
+    isRefreshing,
+    mutate,
   };
 }

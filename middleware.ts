@@ -1,6 +1,26 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
+// Note: Rate limiter is initialized outside for persistence where possible
+// In Edge/Serverless environments, this might re-init but connects to same Redis
+// Rate limiter setup with safety checks
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  })
+  : null;
+
+const ratelimit = redis
+  ? new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(30, '60 s'), // Increased limit for dev
+    analytics: true,
+  })
+  : null;
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'default-secret-key-change-me');
 
@@ -18,10 +38,41 @@ const adminRoutes = [
 ];
 
 export async function middleware(req: NextRequest) {
-  const token = req.cookies.get('auth_token')?.value;
   const { pathname } = req.nextUrl;
+  const forwarded = req.headers.get('x-forwarded-for');
+  const ip = forwarded ? forwarded.split(',')[0] : '127.0.0.1';
 
-  // 1. Check if route requires auth
+  // 1. Rate Limiting for API routes
+  if (pathname.startsWith('/api/')) {
+    console.log('[Middleware] API Request:', pathname);
+    if (ratelimit) {
+      try {
+        const { success, limit, reset, remaining } = await ratelimit.limit(`ratelimit_${ip}`);
+
+        if (!success) {
+          return NextResponse.json(
+            { error: 'Too many requests' },
+            {
+              status: 429,
+              headers: {
+                'X-RateLimit-Limit': limit.toString(),
+                'X-RateLimit-Remaining': remaining.toString(),
+                'X-RateLimit-Reset': reset.toString(),
+              }
+            }
+          );
+        }
+      } catch (err) {
+        console.error('Rate limiting error:', err);
+        // Continue without rate limiting on error to avoid breaking the app
+      }
+    }
+  }
+
+  // 2. Auth checks
+  const token = req.cookies.get('auth_token')?.value;
+
+  // Check if route requires auth
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
   const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
 
@@ -34,8 +85,8 @@ export async function middleware(req: NextRequest) {
 
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET);
-      
-      // 2. Check Admin Role
+
+      // Check Admin Role
       if (isAdminRoute && payload.role !== 'admin') {
         return NextResponse.redirect(new URL('/', req.url)); // Or unauthorized page
       }

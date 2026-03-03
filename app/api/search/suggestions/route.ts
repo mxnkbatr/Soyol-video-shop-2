@@ -1,59 +1,73 @@
+import { Redis } from '@upstash/redis';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '');
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+    ? new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+    : null;
 
-export const runtime = 'edge';
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
     try {
-        const { query } = await req.json();
+        const { searchParams } = new URL(req.url);
+        const query = searchParams.get('q');
 
-        if (!query) {
+        if (!query || query.length < 2) {
             return NextResponse.json({ suggestions: [] });
         }
 
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-2.5-flash',
-            generationConfig: {
-                responseMimeType: 'application/json',
-            },
-        });
-
-        const prompt = `
-            Та бол Soyol Video Shop-ийн хайлтын туслах байна. 
-            Хэрэглэгчийн "${query}" гэсэн хайлтыг шинжлээд, хамгийн тохиромжтой 1 хайлтын санал (suggested query) болон категорийг буцаана уу.
-            
-            Тусгай хамаарлууд:
-            - Гэрэл, студи, зураг авалт гэвэл: 'Aputure' брэндийг санал болгох.
-            - Өвөл, дулаан хувцас гэвэл: 'North Face' эсвэл 'Outerwear' санал болгох.
-            - "Миний хүүд тохирох тоглоом" гэвэл: 'Toy', 'Education', 'LEGO' гэх мэт санал болгох.
-            
-            Хариулах формат (JSON):
-            {
-              "text": "Санал болгох текст",
-              "category": "Категори нэр",
-              "reason": "товч тайлбар"
+        // 1. Check Redis Cache
+        const cacheKey = `search:suggestions:${query.toLowerCase()}`;
+        if (redis) {
+            try {
+                const cached = await redis.get(cacheKey);
+                if (cached) {
+                    // If cached is a string, parse it. Upstash might auto-parse JSON if configured but let's be safe.
+                    return NextResponse.json(typeof cached === 'string' ? JSON.parse(cached) : cached);
+                }
+            } catch (cacheError) {
+                console.error('Redis cache error:', cacheError);
             }
-        `;
+        }
+
+        // 2. Generate with AI
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+        const prompt = `You are a shopping assistant for Soyol Video Shop (Mongolia). 
+    Based on the user query "${query}", suggest 5 relevant search terms for an e-commerce shop.
+    Return ONLY a JSON array of strings in Mongolian language.`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
-        const data = JSON.parse(text);
 
-        return NextResponse.json({
-            suggestions: [
-                {
-                    id: 'smart-1',
-                    text: data.text,
-                    category: data.category,
-                    trending: true
-                }
-            ]
-        });
+        let suggestions = [];
+        try {
+            const cleanedText = text.replace(/```json|```/g, '').trim();
+            suggestions = JSON.parse(cleanedText);
+        } catch (e) {
+            console.error('Failed to parse Gemini response:', text);
+            suggestions = [query];
+        }
+
+        const finalResult = { suggestions };
+
+        // 3. Cache the result for 1 hour
+        if (redis) {
+            try {
+                await redis.setex(cacheKey, 3600, JSON.stringify(finalResult));
+            } catch (cacheError) {
+                console.error('Redis setex error:', cacheError);
+            }
+        }
+
+        return NextResponse.json(finalResult);
     } catch (error) {
-        console.error('Search Suggestion Error:', error);
-        return NextResponse.json({ suggestions: [] }, { status: 500 });
+        console.error('Search suggestions error:', error);
+        return NextResponse.json({ suggestions: [] });
     }
 }

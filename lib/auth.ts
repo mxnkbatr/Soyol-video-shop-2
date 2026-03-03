@@ -3,32 +3,36 @@ import { jwtVerify } from 'jose';
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'default-secret-key-change-me');
+if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET env variable is not set');
+}
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 /**
  * Server-side auth helper.
- * Returns `{ userId }` if authenticated, `{ userId: null }` otherwise.
+ * Returns `{ userId, phone, role }` if authenticated, `{ userId: null, ... }` otherwise.
  */
-export async function auth(): Promise<{ userId: string | null; phone: string | null }> {
+export async function auth(): Promise<{ userId: string | null; phone: string | null; role: string | null }> {
     try {
         const cookieStore = await cookies();
         const token = cookieStore.get('auth_token')?.value;
 
-        if (!token) return { userId: null, phone: null };
+        if (!token) return { userId: null, phone: null, role: null };
 
         const { payload } = await jwtVerify(token, JWT_SECRET);
 
         // JWT standard uses 'sub' for subject (user id)
         const userId = payload.sub || payload.userId;
 
-        if (!userId) return { userId: null, phone: null };
+        if (!userId) return { userId: null, phone: null, role: null };
 
         return {
             userId: userId as string,
             phone: (payload.phone as string) || null,
+            role: (payload.role as string) || null,
         };
     } catch {
-        return { userId: null, phone: null };
+        return { userId: null, phone: null, role: null };
     }
 }
 

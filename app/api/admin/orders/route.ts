@@ -6,9 +6,9 @@ import { auth } from '@/lib/auth';
 // Get all orders (Admin only)
 export async function GET(request: Request) {
     try {
-        const { userId: authUserId } = await auth();
-        if (!authUserId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const { userId: authUserId, role } = await auth();
+        if (!authUserId || role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const { searchParams } = new URL(request.url);
@@ -65,7 +65,7 @@ export async function PUT(request: Request) {
             try {
                 let title = '';
                 let message = '';
-                
+
                 if (status === 'confirmed') {
                     title = '✅ Захиалга баталгаажлаа!';
                     message = `Таны захиалга баталгаажлаа. Хүргэлт: ${deliveryEstimate || existingOrder.deliveryEstimate || 'Тодорхойлогдоно'}`;
