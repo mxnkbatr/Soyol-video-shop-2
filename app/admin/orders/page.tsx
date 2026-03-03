@@ -97,7 +97,8 @@ export default function AdminOrdersPage() {
         }
     };
 
-    const handleQuickStatus = async (orderId: string, newStatus: OrderStatus) => {
+    const handleStatusQuickChange = async (orderId: string, newStatus: OrderStatus) => {
+        console.log('Running handleStatusQuickChange v3');
         setQuickUpdating(orderId);
         await updateOrderStatus(orderId, newStatus);
         setQuickUpdating(null);
@@ -331,7 +332,7 @@ export default function AdminOrdersPage() {
                                                         <div className="flex items-center gap-2">
                                                             {order.status === 'pending' && (
                                                                 <button
-                                                                    onClick={() => handleQuickStatus(order._id, 'confirmed')}
+                                                                    onClick={() => handleStatusQuickChange(order._id, 'confirmed')}
                                                                     disabled={quickUpdating === order._id}
                                                                     className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50 whitespace-nowrap"
                                                                 >
@@ -340,7 +341,7 @@ export default function AdminOrdersPage() {
                                                             )}
                                                             {order.status === 'confirmed' && (
                                                                 <button
-                                                                    onClick={() => handleQuickStatus(order._id, 'delivered')}
+                                                                    onClick={() => handleStatusQuickChange(order._id, 'delivered')}
                                                                     disabled={quickUpdating === order._id}
                                                                     className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 whitespace-nowrap"
                                                                 >
