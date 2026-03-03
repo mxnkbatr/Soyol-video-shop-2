@@ -17,7 +17,7 @@ export interface Address {
 export interface User {
     _id?: ObjectId;
     phone: string;
-    role: 'admin' | 'user';
+    role: 'admin' | 'user' | 'vendor';
     status: 'available' | 'in-call';
     name?: string;
     email?: string;

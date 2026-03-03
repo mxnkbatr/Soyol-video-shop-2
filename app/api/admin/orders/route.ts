@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { auth } from '@/lib/auth';
+import { sendOrderStatusUpdate } from '@/lib/email';
 
 // Get all orders (Admin only)
 export async function GET(request: Request) {
@@ -86,6 +87,20 @@ export async function PUT(request: Request) {
                         createdAt: new Date()
                     });
                 }
+                // Send Email (Non-blocking)
+                (async () => {
+                    try {
+                        const usersCollection = await getCollection('users');
+                        const owner = await usersCollection.findOne({ _id: new ObjectId(existingOrder.userId) });
+                        if (owner?.email) {
+                            await sendOrderStatusUpdate(
+                                { ...existingOrder, deliveryEstimate: deliveryEstimate || existingOrder.deliveryEstimate },
+                                owner.email,
+                                status
+                            );
+                        }
+                    } catch (e) { console.error('Status update email error:', e); }
+                })();
             } catch (notifError) {
                 console.error('Failed to send customer notification:', notifError);
             }

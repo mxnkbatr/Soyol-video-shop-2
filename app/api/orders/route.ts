@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
 
 import { User } from '@/models/User';
+import { sendOrderConfirmation } from '@/lib/email';
 
 export async function GET(req: NextRequest) {
   try {
@@ -73,9 +74,9 @@ export async function POST(req: NextRequest) {
     try {
       const usersCollection = await getCollection('users');
       const notificationsCollection = await getCollection('notifications');
-      
+
       const admins = await usersCollection.find({ role: 'admin' }).toArray();
-      
+
       if (admins.length > 0) {
         const notifications = admins.map(admin => ({
           userId: admin._id.toString(),
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
           link: '/admin/orders',
           createdAt: new Date()
         }));
-        
+
         await notificationsCollection.insertMany(notifications);
       }
     } catch (notifError) {
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
       try {
         const users = await getCollection<User>('users');
         const userObjectId = new ObjectId(userId);
-        
+
         // Construct new address object
         const newAddress = {
           id: new ObjectId().toString(),
@@ -147,7 +148,7 @@ export async function POST(req: NextRequest) {
         // Add new address
         await users.updateOne(
           { _id: userObjectId },
-          { 
+          {
             $push: { addresses: newAddress } as any,
             $set: { phone: phone || undefined } // Update phone if provided
           }
@@ -158,7 +159,31 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ orderId: result.insertedId.toString() }, { status: 201 });
+    // Send Email Confirmation (Non-blocking)
+    const currentOrderId = result.insertedId.toString();
+    (async () => {
+      try {
+        let recipientEmail = body.shipping?.email || body.email;
+        if (!recipientEmail && userId !== 'guest') {
+          const usersCollection = await getCollection('users');
+          const owner = await usersCollection.findOne({ _id: new ObjectId(userId) });
+          recipientEmail = owner?.email;
+        }
+
+        if (recipientEmail) {
+          await sendOrderConfirmation({
+            id: currentOrderId,
+            items: body.items || [],
+            totalPrice: body.total || 0,
+            fullName: body.shipping?.fullName || 'Хэрэглэгч',
+            address: body.shipping?.address || '',
+            city: body.shipping?.city || ''
+          }, recipientEmail);
+        }
+      } catch (e) { console.error('Email confirmation error:', e); }
+    })();
+
+    return NextResponse.json({ orderId: currentOrderId }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
   }
@@ -181,7 +206,7 @@ export async function PATCH(req: NextRequest) {
     // Only allow cancellation for now via this specific endpoint logic
     // Admin status updates might go through a different flow or check role here
     if (status !== 'cancelled') {
-        return NextResponse.json({ error: 'Invalid status update via this endpoint' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid status update via this endpoint' }, { status: 400 });
     }
 
     const orders = await getCollection('orders');
@@ -197,35 +222,35 @@ export async function PATCH(req: NextRequest) {
 
     if (order.status !== 'pending') {
       return NextResponse.json(
-        { error: 'Баталгаажсан захиалгыг цуцлах боломжгүй' }, 
+        { error: 'Баталгаажсан захиалгыг цуцлах боломжгүй' },
         { status: 400 }
       );
     }
 
     await orders.updateOne(
       { _id: new ObjectId(orderId) },
-      { 
-        $set: { 
+      {
+        $set: {
           status: 'cancelled',
           updatedAt: new Date()
-        } 
+        }
       }
     );
 
     // Send notification to customer
     try {
-        const notificationsCollection = await getCollection('notifications');
-        await notificationsCollection.insertOne({
-            userId: order.userId,
-            title: '❌ Захиалга цуцлагдлаа',
-            message: 'Таны захиалга амжилттай цуцлагдлаа.',
-            type: 'order',
-            isRead: false,
-            link: '/orders',
-            createdAt: new Date()
-        });
+      const notificationsCollection = await getCollection('notifications');
+      await notificationsCollection.insertOne({
+        userId: order.userId,
+        title: '❌ Захиалга цуцлагдлаа',
+        message: 'Таны захиалга амжилттай цуцлагдлаа.',
+        type: 'order',
+        isRead: false,
+        link: '/orders',
+        createdAt: new Date()
+      });
     } catch (error) {
-        console.error('Failed to send cancellation notification:', error);
+      console.error('Failed to send cancellation notification:', error);
     }
 
     return NextResponse.json({ success: true });

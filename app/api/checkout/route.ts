@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
         const productIds = items.map(item => new ObjectId(item.id));
         const dbProducts = await productsCollection.find({ _id: { $in: productIds } }, { session }).toArray();
 
+        const storesCollection = db.collection('stores');
+
         let totalPrice = 0;
         const orderItems = [];
 
@@ -56,13 +58,29 @@ export async function POST(request: NextRequest) {
             throw new Error(`Insufficient stock for ${product.name}. Available: ${product.inventory || 0}`);
           }
 
+          // Vendor & Commission Calculation
+          const vendorId = product.vendorId;
+          let commissionAmount = 0;
+          let vendorAmount = product.price * item.quantity;
+
+          if (vendorId) {
+            const store = await storesCollection.findOne({ vendorId }, { session });
+            const commissionRate = store?.commissionRate || 10;
+            commissionAmount = (product.price * item.quantity) * (commissionRate / 100);
+            vendorAmount = (product.price * item.quantity) - commissionAmount;
+          }
+
           totalPrice += product.price * item.quantity;
           orderItems.push({
             id: item.id,
+            productId: item.id, // For fallback
             name: product.name,
             price: product.price,
             quantity: item.quantity,
-            image: product.image || ''
+            image: product.image || '',
+            vendorId: vendorId || null,
+            commissionAmount,
+            vendorAmount
           });
         }
 

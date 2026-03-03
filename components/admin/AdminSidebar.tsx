@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     BarChart3, Package, Tag, Layers, ShoppingCart, MessageCircle,
-    ArrowLeft, Menu, X
+    ArrowLeft, Menu, X, Building2
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -15,6 +15,7 @@ const navItems = [
     { href: '/admin/attributes', icon: Tag, label: 'Шинж чанар' },
     { href: '/admin/categories', icon: Layers, label: 'Ангилал' },
     { href: '/admin/orders', icon: ShoppingCart, label: 'Захиалгууд' },
+    { href: '/admin/stores', icon: Building2, label: 'Дэлгүүрүүд' },
     { href: '/admin/messages', icon: MessageCircle, label: 'Мессеж & Дуудлага' },
 ];
 
@@ -65,8 +66,8 @@ export default function AdminSidebar() {
                             href={href}
                             onClick={() => setSidebarOpen(false)}
                             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${active
-                                    ? 'bg-amber-500/10 text-amber-400 border-l-2 border-amber-500 shadow-lg shadow-amber-500/5'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent'
+                                ? 'bg-amber-500/10 text-amber-400 border-l-2 border-amber-500 shadow-lg shadow-amber-500/5'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent'
                                 }`}
                         >
                             <Icon className="w-5 h-5 shrink-0" />

@@ -52,12 +52,25 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
   const { addItem } = useCartStore();
   const { t } = useTranslation();
 
-  // Mock multiple images for the gallery if only one exists
-  const images = product.image ? [
-    product.image,
-    product.image, // Mock
-    product.image  // Mock
-  ] : ['/soyol-logo.png'];
+  // 1. Professional Image Data Handling
+  const images: string[] = product.images?.length
+    ? product.images
+    : product.image
+      ? [product.image]
+      : ['/placeholder-product.png'];
+
+  // Keyboard Navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+      } else if (e.key === 'ArrowRight') {
+        setActiveImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [images.length]);
 
   const handleWishlist = () => {
     if (!isAuthenticated) {
@@ -91,12 +104,12 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
 
   const handleAddToCart = () => {
     for (let i = 0; i < quantity; i++) {
-      addItem({ 
-        ...product, 
-        image: product.image || '', 
-        rating: product.rating ?? 0, 
+      addItem({
+        ...product,
+        image: product.image || '',
+        rating: product.rating ?? 0,
         stockStatus: product.stockStatus as any,
-        description: product.description || undefined 
+        description: product.description || undefined
       });
     }
     toast.custom((toastInstance) => (
@@ -117,10 +130,10 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
   };
 
   const handleBuyNow = () => {
-    addItem({ 
-      ...product, 
-      image: product.image || '', 
-      rating: product.rating ?? 0, 
+    addItem({
+      ...product,
+      image: product.image || '',
+      rating: product.rating ?? 0,
       stockStatus: product.stockStatus as any,
       description: product.description || undefined
     });
@@ -148,7 +161,13 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 relative rounded-lg overflow-hidden border border-slate-100">
-              <Image src={product.image || '/soyol-logo.png'} alt={product.name} fill className="object-contain p-1" />
+              <Image
+                src={product.image || '/soyol-logo.png'}
+                alt={product.name}
+                fill
+                className="object-contain p-1"
+                onError={(e) => { e.currentTarget.src = '/placeholder-product.png' }}
+              />
             </div>
             <div>
               <h3 className="font-bold text-slate-900 text-sm line-clamp-1">{product.name}</h3>
@@ -178,83 +197,145 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
 
-          {/* Left: Images (7 cols) */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Mobile Carousel - Snap Scroll */}
-            <div className="relative w-full aspect-square md:aspect-[4/3] md:rounded-3xl overflow-hidden md:bg-white md:border md:border-slate-100 md:shadow-sm group">
-              <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide h-full w-full">
-                {images.map((img, i) => (
-                  <div key={i} className="flex-none w-full h-full snap-center relative">
+          {/* Left: Professional Gallery Implementation (7 cols) */}
+          <div className="lg:col-span-7">
+            <div className="flex flex-col md:flex-row gap-6">
+
+              {/* Desktop Vertical Thumbnails (Hidden on Mobile) */}
+              {images.length > 1 && (
+                <div className="hidden md:flex flex-col gap-4 shrink-0">
+                  {images.map((img, i) => (
+                    <button
+                      key={i}
+                      onMouseEnter={() => setActiveImageIndex(i)}
+                      onClick={() => setActiveImageIndex(i)}
+                      className={`relative w-20 h-20 rounded-xl overflow-hidden bg-white border-2 transition-all active:scale-95 ${i === activeImageIndex
+                        ? 'border-[#FF5000] ring-2 ring-[#FF5000]/20 ring-offset-2'
+                        : 'border-slate-100 opacity-60 hover:opacity-100 hover:border-slate-300'
+                        }`}
+                    >
+                      <Image
+                        src={img}
+                        alt={`Thumbnail ${i + 1}`}
+                        fill
+                        className="object-cover"
+                        onError={(e) => { e.currentTarget.src = '/placeholder-product.png' }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Main Image View */}
+              <div className="relative flex-1 aspect-square rounded-2xl md:rounded-[2.5rem] overflow-hidden bg-white md:bg-slate-50 border border-slate-100 group">
+
+                {/* Desktop: Scale on Hover | Mobile: Drag Carousel */}
+                <div className="relative w-full h-full md:hidden">
+                  <motion.div
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    onDragEnd={(_, info) => {
+                      if (info.offset.x < -100 && activeImageIndex < images.length - 1) {
+                        setActiveImageIndex(prev => prev + 1);
+                      } else if (info.offset.x > 100 && activeImageIndex > 0) {
+                        setActiveImageIndex(prev => prev - 1);
+                      }
+                    }}
+                    className="flex w-full h-full"
+                    animate={{ x: `-${activeImageIndex * 100}%` }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  >
+                    {images.map((img, i) => (
+                      <div key={i} className="relative w-full h-full shrink-0">
+                        <Image
+                          src={img}
+                          alt={`${product.name} ${i + 1}`}
+                          fill
+                          className="object-contain"
+                          onError={(e) => { e.currentTarget.src = '/placeholder-product.png' }}
+                          priority={i === 0}
+                        />
+                      </div>
+                    ))}
+                  </motion.div>
+                </div>
+
+                {/* Desktop Static View with Hover Zoom */}
+                <div className="hidden md:block relative w-full h-full overflow-hidden">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="relative w-full h-full"
+                  >
                     <Image
-                      src={img}
-                      alt={`${product.name} ${i + 1}`}
+                      src={images[activeImageIndex]}
+                      alt={product.name}
                       fill
                       className="object-contain p-8 md:p-12"
-                      priority={i === 0}
+                      onError={(e) => { e.currentTarget.src = '/placeholder-product.png' }}
                     />
-                  </div>
-                ))}
-              </div>
+                  </motion.div>
+                </div>
 
-              {/* Image Indicators */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 md:hidden">
-                {images.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-1.5 h-1.5 rounded-full transition-all ${activeImageIndex === i ? 'bg-slate-800 w-3' : 'bg-slate-300'}`}
-                  />
-                ))}
-              </div>
+                {/* Mobile: Image Count Badge */}
+                <span className="absolute bottom-4 right-4 bg-black/50 text-white text-[10px] sm:text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md md:hidden flex items-center gap-1.5">
+                  <Eye className="w-3 h-3" />
+                  {activeImageIndex + 1} / {images.length}
+                </span>
 
-              {/* Badges Overlay */}
-              <div className="absolute top-4 left-4 flex flex-col gap-2">
-                {product.stockStatus === 'in-stock' ? (
-                  <div className="px-2.5 py-1 backdrop-blur-md bg-white/90 border border-orange-100 rounded-full shadow-sm flex items-center gap-1.5">
-                    <Zap className="w-3 h-3 text-orange-600 fill-orange-600" />
-                    <span className="text-[10px] font-extrabold text-orange-600 uppercase tracking-wider">БЭЛЭН</span>
-                  </div>
-                ) : (
-                  <div className="px-2.5 py-1 backdrop-blur-md bg-white/90 border border-slate-100 rounded-full shadow-sm flex items-center gap-1.5">
-                    <Clock className="w-3 h-3 text-slate-500" />
-                    <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">ЗАХИАЛГААР</span>
+                {/* Status Badges Overlay */}
+                <div className="absolute top-6 left-6 flex flex-col gap-2">
+                  {product.stockStatus === 'in-stock' ? (
+                    <div className="px-3 py-1.5 backdrop-blur-md bg-white/90 border border-orange-100 rounded-full shadow-sm flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-orange-600 fill-orange-600" />
+                      <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest">БЭЛЭН</span>
+                    </div>
+                  ) : (
+                    <div className="px-3 py-1.5 backdrop-blur-md bg-white/90 border border-slate-100 rounded-full shadow-sm flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">ЗАХИАЛГААР</span>
+                    </div>
+                  )}
+                  {discount > 0 && (
+                    <div className="px-3 py-1.5 bg-[#FF5000] text-white rounded-full shadow-lg shadow-orange-500/20 flex items-center gap-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-widest">-{discount}%</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Share & Wishlist Fab */}
+                <div className="absolute top-6 right-6 flex flex-col gap-3">
+                  <button
+                    onClick={handleWishlist}
+                    className="p-3 bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border border-slate-100 text-slate-400 hover:text-red-500 transition-all active:scale-90"
+                  >
+                    <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current text-red-500' : ''}`} />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="p-3 bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border border-slate-100 text-slate-400 hover:text-blue-500 transition-all active:scale-90"
+                  >
+                    <Share2 className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Mobile Dots */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 md:hidden">
+                    {images.map((_, i) => (
+                      <motion.div
+                        key={i}
+                        initial={false}
+                        animate={{
+                          width: activeImageIndex === i ? 24 : 8,
+                          backgroundColor: activeImageIndex === i ? '#FF5000' : '#CBD5E1'
+                        }}
+                        className="h-2 rounded-full"
+                      />
+                    ))}
                   </div>
                 )}
-                {discount > 0 && (
-                  <div className="px-2.5 py-1 bg-red-500 text-white rounded-full shadow-sm flex items-center gap-1.5">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider">-{discount}%</span>
-                  </div>
-                )}
               </div>
-
-              {/* Share & Wishlist Fab */}
-              <div className="absolute top-4 right-4 flex flex-col gap-3">
-                <button
-                  onClick={handleWishlist}
-                  className="p-2.5 bg-white/90 backdrop-blur-md rounded-full shadow-sm border border-slate-100 text-slate-400 hover:text-red-500 transition-all active:scale-90"
-                >
-                  <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current text-red-500' : ''}`} />
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="p-2.5 bg-white/90 backdrop-blur-md rounded-full shadow-sm border border-slate-100 text-slate-400 hover:text-blue-500 transition-all active:scale-90"
-                >
-                  <Share2 className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Desktop Thumbnails (Hidden on Mobile) */}
-            <div className="hidden md:grid grid-cols-4 gap-4 mt-4">
-              {images.map((img, i) => (
-                <button
-                  key={i}
-                  onMouseEnter={() => setActiveImageIndex(i)}
-                  className={`relative aspect-square rounded-2xl overflow-hidden bg-white border-2 transition-all ${i === activeImageIndex ? 'border-orange-500 ring-2 ring-orange-100' : 'border-slate-100 hover:border-slate-300'
-                    }`}
-                >
-                  <Image src={img} alt="" fill className="object-contain p-2" />
-                </button>
-              ))}
             </div>
           </div>
 
@@ -372,37 +453,32 @@ export default function ProductDetailClient({ product }: { product: ProductDetai
 }
 
 // Sub-component for Product Info Tabs
+// Sub-component for Product Info Tabs
 function ProductInfoTabs({ product }: { product: any }) {
-  const [activeTab, setActiveTab] = useState('specs');
-
-  const specs = [
-    { label: 'Брэнд', value: product.brand || product.category },
-    { label: 'Загвар', value: product.model || product.name },
-    { label: 'Төлөв', value: product.stockStatus === 'in-stock' ? 'Бэлэн' : 'Захиалгаар' },
-    { label: 'Хүргэлт', value: product.delivery || 'Үнэгүй' },
-    { label: 'Төлбөрийн нөхцөл', value: product.paymentMethods || 'QPay, SocialPay, Card' }
+  const tabs = [
+    { id: 'description', label: 'Тайлбар' },
+    { id: 'specs', label: 'Тодорхойлолт' },
+    { id: 'reviews', label: `Үнэлгээ (${product.reviewCount || 0})` },
   ];
+  const [activeTab, setActiveTab] = useState('description');
 
   return (
     <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-slate-100 overflow-hidden">
-      <div className="flex gap-8 border-b border-slate-100 mb-8 overflow-x-auto scrollbar-hide">
-        {[
-          { id: 'specs', label: 'Техникийн үзүүлэлт' },
-          { id: 'warranty', label: 'Баталгаат хугацаа' },
-          { id: 'shipping', label: 'Хүргэлт & Буцаалт' }
-        ].map((tab) => (
+      <div className="flex border-b border-gray-100 mt-8">
+        {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`pb-4 text-sm md:text-base font-black transition-all relative whitespace-nowrap ${
-              activeTab === tab.id ? 'text-[#FF5000]' : 'text-slate-400 hover:text-slate-600'
-            }`}
+            className={`px-5 py-3 text-sm font-bold relative transition-colors ${activeTab === tab.id
+                ? 'text-[#FF5000]'
+                : 'text-gray-400 hover:text-gray-700'
+              }`}
           >
             {tab.label}
             {activeTab === tab.id && (
               <motion.div
-                layoutId="activeProductTab"
-                className="absolute bottom-0 left-0 right-0 h-1 bg-[#FF5000] rounded-full"
+                layoutId="tab-underline"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FF5000]"
               />
             )}
           </button>
@@ -410,79 +486,118 @@ function ProductInfoTabs({ product }: { product: any }) {
       </div>
 
       <AnimatePresence mode="wait">
-        {activeTab === 'specs' && (
-          <motion.div
-            key="specs"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="grid md:grid-cols-2 gap-x-12"
-          >
-            {specs.map((spec, i) => (
-              <div key={i} className="flex justify-between py-4 border-b border-slate-50 last:border-0 md:last:border-b">
-                <span className="text-slate-500 font-bold text-sm">{spec.label}</span>
-                <span className="text-slate-900 font-black text-sm">{spec.value}</span>
-              </div>
-            ))}
-          </motion.div>
-        )}
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2 }}
+          className="mt-6"
+        >
+          {activeTab === 'description' && (
+            <div>
+              {product.description ? (
+                <div className="prose prose-sm text-slate-600 max-w-none">
+                  <p className="leading-relaxed font-medium text-base">{product.description}</p>
+                </div>
+              ) : (
+                <p className="text-gray-400 text-sm italic">Тайлбар оруулаагүй байна</p>
+              )}
 
-        {activeTab === 'warranty' && (
-          <motion.div
-            key="warranty"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-4"
-          >
-            <div className="bg-orange-50 p-6 rounded-2xl border border-orange-100">
-              <h4 className="font-black text-[#FF5000] mb-2">Албан ёсны баталгаа</h4>
-              <p className="text-slate-600 text-sm leading-relaxed font-medium">
-                Энэхүү бүтээгдэхүүнд Soyol Video Shop-оос 1 жилийн албан ёсны баталгааг олгож байна. 
-                Баталгаат хугацаанд үйлдвэрийн согог илэрсэн тохиолдолд бид үнэ төлбөргүй засварлаж эсвэл сольж өгөх болно.
-              </p>
+              <div className="flex flex-wrap gap-2 mt-4">
+                {product.brand && (
+                  <span className="px-3 py-1 bg-gray-50 rounded-full text-xs font-medium text-gray-600">
+                    🏷️ {product.brand}
+                  </span>
+                )}
+                {product.model && (
+                  <span className="px-3 py-1 bg-gray-50 rounded-full text-xs font-medium text-gray-600">
+                    ⚙️ Загвар: {product.model}
+                  </span>
+                )}
+                {product.delivery && (
+                  <span className="px-3 py-1 bg-gray-50 rounded-full text-xs font-medium text-gray-600">
+                    🚚 Хүргэлт: {product.delivery}
+                  </span>
+                )}
+                {product.paymentMethods && (
+                  <span className="px-3 py-1 bg-gray-50 rounded-full text-xs font-medium text-gray-600">
+                    💳 Төлбөр: {product.paymentMethods}
+                  </span>
+                )}
+              </div>
             </div>
-            <ul className="space-y-3 text-sm text-slate-500 font-medium">
-              <li className="flex gap-3">
-                <span className="text-[#FF5000]">•</span>
-                Механик гэмтэл баталгаанд хамаарахгүй
-              </li>
-              <li className="flex gap-3">
-                <span className="text-[#FF5000]">•</span>
-                Зориулалтын бус хэрэглээнээс үүдсэн гэмтэл хамаарахгүй
-              </li>
-            </ul>
-          </motion.div>
-        )}
+          )}
 
-        {activeTab === 'shipping' && (
-          <motion.div
-            key="shipping"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                <Truck className="w-5 h-5 text-slate-600" />
+          {activeTab === 'specs' && (
+            <div>
+              {product.attributes && Object.keys(product.attributes).length > 0 ? (
+                <div className="rounded-xl border border-gray-100 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {Object.entries(product.attributes || {}).map(([key, val], i) => (
+                        <tr key={key} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                          <td className="py-2.5 px-4 text-gray-500 font-medium w-1/3">{key}</td>
+                          <td className="py-2.5 px-4 text-gray-900">{String(val)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-400 text-sm italic">Тодорхойлолт байхгүй</p>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'reviews' && (
+            <div className="flex flex-col items-center py-8">
+              <div className="text-center mb-6">
+                <span className="text-5xl font-black text-slate-900 tracking-tighter">
+                  {product.rating ? Number(product.rating).toFixed(1) : '0.0'}
+                </span>
+                <div className="flex justify-center text-amber-400 mt-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Star
+                      key={star}
+                      className={`w-5 h-5 ${star <= Math.round(product.rating || 0) ? 'fill-current' : 'text-slate-200'}`}
+                    />
+                  ))}
+                </div>
+                <div className="text-sm font-medium text-slate-500 mt-2">Нийт {product.reviewCount || 0} үнэлгээ</div>
               </div>
-              <div>
-                <h4 className="font-black text-slate-900 text-sm mb-1">Шуурхай хүргэлт</h4>
-                <p className="text-slate-500 text-xs leading-relaxed font-medium">Улаанбаатар хот дотор 24-48 цагийн дотор хүргэгдэнэ. Хүргэлтийн төлбөр 5,000₮.</p>
+
+              <div className="w-full max-w-sm space-y-2 mb-8">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  // Stub out percentages for the static placeholder
+                  const pct = Math.round(Math.random() * 80);
+                  const width = product.reviewCount > 0 ? (star === 5 ? '72%' : `${pct}%`) : '0%';
+                  return (
+                    <div key={star} className="flex items-center gap-3 text-sm">
+                      <span className="font-medium text-slate-600 w-4">{star}</span>
+                      <Star className="w-4 h-4 fill-slate-300 text-slate-300" />
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-amber-400 rounded-full" style={{ width }} />
+                      </div>
+                      <span className="text-slate-500 font-medium w-8 text-right">{width}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="w-full max-w-sm flex flex-col items-center pt-8 border-t border-gray-100">
+                {!product.reviewCount && (
+                  <p className="text-gray-400 text-sm italic mb-4">
+                    Үнэлгээ байхгүй байна. Эхний үнэлгээг бичээрэй!
+                  </p>
+                )}
+                <button className="px-6 py-2.5 bg-[#FF5000] text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 hover:bg-[#E64500] transition-colors active:scale-95">
+                  Үнэлгээ бичих
+                </button>
               </div>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                <ArrowRight className="w-5 h-5 text-slate-600" />
-              </div>
-              <div>
-                <h4 className="font-black text-slate-900 text-sm mb-1">Буцаалт</h4>
-                <p className="text-slate-500 text-xs leading-relaxed font-medium">Та бараагаа авснаас хойш 7 хоногийн дотор үйлдвэрийн согогтой бол буцаах боломжтой.</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
+          )}
+        </motion.div>
       </AnimatePresence>
     </div>
   );

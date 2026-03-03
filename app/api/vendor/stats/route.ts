@@ -1,38 +1,59 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { auth } from '@/lib/auth';
 
-export const dynamic = 'force-dynamic';
-
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+    const { userId, role } = await auth();
+    if (!userId || role !== 'vendor') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const products = await getCollection('products');
-    const orders = await getCollection('orders');
+    const ordersCollection = await getCollection('orders');
+    const productsCollection = await getCollection('products');
 
-    const totalProducts = await products.countDocuments({ vendorId: userId });
-    const totalOrders = await orders.countDocuments({ vendorId: userId });
+    // 1. Fetch vendor's orders (delivered ones for revenue)
+    const allVendorOrders = await ordersCollection.find({
+      'items.vendorId': userId
+    }).toArray();
+
+    let totalRevenue = 0;
+    let commissionPaid = 0;
+    let totalOrders = allVendorOrders.length;
+    let pendingOrders = 0;
+
+    allVendorOrders.forEach(order => {
+      const vendorItems = order.items.filter((item: any) => item.vendorId === userId);
+
+      const orderSubtotal = vendorItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+      const orderCommission = vendorItems.reduce((sum: number, item: any) => sum + (item.commissionAmount || 0), 0);
+
+      if (order.status === 'delivered') {
+        totalRevenue += (orderSubtotal - orderCommission);
+        commissionPaid += orderCommission;
+      }
+
+      if (order.status === 'pending') {
+        pendingOrders++;
+      }
+    });
+
+    // 2. Low stock products
+    const lowStockCount = await productsCollection.countDocuments({
+      vendorId: userId,
+      inventory: { $lt: 5 }
+    });
 
     return NextResponse.json({
-      totalRevenue: 0,
+      totalRevenue,
       totalOrders,
-      totalProducts,
-      avgRating: 0,
-      pendingOrders: 0,
-      lowStockProducts: 0,
+      pendingOrders,
+      commissionPaid,
+      lowStockProducts: lowStockCount
     });
+
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch stats' },
-      { status: 500 }
-    );
+    console.error('Vendor stats error:', error);
+    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 });
   }
 }
