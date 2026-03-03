@@ -74,7 +74,7 @@ export default function AdminOrdersPage() {
     const updateOrderStatus = async (orderId: string, newStatus: OrderStatus, estimate?: string) => {
         // Optimistic UI update
         const previousOrders = [...orders];
-        setOrders(current => current.map(order => 
+        setOrders(current => current.map(order =>
             order._id === orderId ? { ...order, status: newStatus, deliveryEstimate: estimate || order.deliveryEstimate } : order
         ));
 
@@ -97,10 +97,16 @@ export default function AdminOrdersPage() {
         }
     };
 
+    const handleQuickStatus = async (orderId: string, newStatus: OrderStatus) => {
+        setQuickUpdating(orderId);
+        await updateOrderStatus(orderId, newStatus);
+        setQuickUpdating(null);
+    };
+
     const openOrderDetails = (order: Order) => {
         setSelectedOrder(order);
         setEditStatus(order.status);
-        
+
         // Auto-set delivery estimate if not set
         if (!order.deliveryEstimate) {
             const hasPreOrder = order.items.some((item: any) => item.stockStatus === 'pre-order');
@@ -108,7 +114,7 @@ export default function AdminOrdersPage() {
         } else {
             setEditEstimate(order.deliveryEstimate);
         }
-        
+
         setIsModalOpen(true);
     };
 
@@ -254,16 +260,14 @@ export default function AdminOrdersPage() {
                                     <button
                                         key={status}
                                         onClick={() => setActiveTab(status)}
-                                        className={`px-3 md:px-4 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${
-                                            activeTab === status 
-                                            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' 
-                                            : 'text-slate-400 hover:text-white'
-                                        }`}
+                                        className={`px-3 md:px-4 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === status
+                                                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                                                : 'text-slate-400 hover:text-white'
+                                            }`}
                                     >
                                         {getStatusLabel(status)}
-                                        <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${
-                                            activeTab === status ? 'bg-white/20' : 'bg-white/5'
-                                        }`}>
+                                        <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${activeTab === status ? 'bg-white/20' : 'bg-white/5'
+                                            }`}>
                                             {counts[status]}
                                         </span>
                                     </button>
@@ -346,7 +350,7 @@ export default function AdminOrdersPage() {
                                                             {order.status === 'delivered' && (
                                                                 <span className="text-emerald-500 font-bold text-lg">✓</span>
                                                             )}
-                                                            <button 
+                                                            <button
                                                                 onClick={() => openOrderDetails(order)}
                                                                 className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                                                             >
@@ -368,7 +372,7 @@ export default function AdminOrdersPage() {
             {/* Detail Modal - Keep existing modal structure but refined */}
             {isModalOpen && selectedOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         className="bg-[#1E293B] border border-white/10 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
@@ -432,7 +436,7 @@ export default function AdminOrdersPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1.5">Захиалгын төлөв</label>
-                                        <select 
+                                        <select
                                             value={editStatus}
                                             onChange={(e) => setEditStatus(e.target.value as OrderStatus)}
                                             className="w-full bg-[#0F172A] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:ring-2 focus:ring-amber-500/20 outline-none"
@@ -444,7 +448,7 @@ export default function AdminOrdersPage() {
                                     </div>
                                     <div>
                                         <label className="block text-[10px] text-slate-500 font-bold uppercase mb-1.5">Хүргэлтийн хугацаа</label>
-                                        <input 
+                                        <input
                                             type="text"
                                             value={editEstimate}
                                             onChange={(e) => setEditEstimate(e.target.value)}
@@ -452,25 +456,25 @@ export default function AdminOrdersPage() {
                                             className="w-full bg-[#0F172A] border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:ring-2 focus:ring-amber-500/20 outline-none placeholder:text-slate-600 mb-2"
                                         />
                                         <div className="flex flex-wrap gap-1.5">
-                                            <button 
+                                            <button
                                                 onClick={() => setEditEstimate('Өнөөдөр хүргэнэ')}
                                                 className="px-2 py-1 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-[10px] rounded-md font-bold transition-colors"
                                             >
                                                 Өнөөдөр хүргэнэ
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={() => setEditEstimate('Маргааш хүргэнэ')}
                                                 className="px-2 py-1 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-[10px] rounded-md font-bold transition-colors"
                                             >
                                                 Маргааш хүргэнэ
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={() => setEditEstimate('7 хоногт ирнэ')}
                                                 className="px-2 py-1 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 text-[10px] rounded-md font-bold transition-colors"
                                             >
                                                 7 хоногт ирнэ
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={() => setEditEstimate('14 хоногт ирнэ')}
                                                 className="px-2 py-1 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 text-[10px] rounded-md font-bold transition-colors"
                                             >
@@ -484,7 +488,7 @@ export default function AdminOrdersPage() {
 
                         <div className="p-6 border-t border-white/5 bg-[#1E293B] flex gap-3">
                             <button onClick={closeModal} className="flex-1 h-12 rounded-xl bg-white/5 hover:bg-white/10 text-white text-sm font-bold transition-all">Цуцлах</button>
-                            <button 
+                            <button
                                 onClick={handleModalUpdate}
                                 disabled={updating}
                                 className="flex-[2] h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold transition-all shadow-lg shadow-amber-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
