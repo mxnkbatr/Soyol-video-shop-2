@@ -78,14 +78,14 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 20, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed z-[100] bottom-24 right-4 md:right-28 w-[calc(100vw-32px)] md:w-96 h-[500px] max-h-[70vh] bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+                    className="fixed z-[100] bottom-24 right-4 md:right-28 w-[calc(100vw-32px)] md:w-96 h-[500px] max-h-[70vh] bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden ring-1 ring-white/5"
                 >
                     {/* Header */}
                     <div className="bg-slate-800/80 backdrop-blur-md p-4 border-b border-white/10 flex items-center justify-between shrink-0">
                         <div className="flex items-center gap-3">
                             {viewMode !== 'menu' && (
-                                <button onClick={handleBack} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
-                                    <ArrowLeft className="w-5 h-5 text-slate-300" />
+                                <button onClick={handleBack} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                                    <ArrowLeft className="w-5 h-5 text-slate-300" strokeWidth={1.2} />
                                 </button>
                             )}
                             <h3 className="font-bold text-white text-lg">
@@ -95,8 +95,8 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                             viewMode === 'video_selection' ? t('chat', 'selectVideoOperator') : t('chat', 'selectOperator')}
                             </h3>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
-                            <X className="w-5 h-5 text-slate-400 hover:text-white" />
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl transition-colors">
+                            <X className="w-5 h-5 text-slate-400 hover:text-white" strokeWidth={1.2} />
                         </button>
                     </div>
 
@@ -112,8 +112,8 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                     <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
                                         <MessageCircle className="w-24 h-24" />
                                     </div>
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg>
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg>
                                     </div>
                                     <div className="relative z-10">
                                         <h4 className="font-bold text-white text-lg group-hover:text-blue-400 transition-colors">{t('chat', 'aiAssistant')}</h4>
@@ -125,8 +125,8 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                     onClick={() => setViewMode('chat_selection')}
                                     className="flex items-center gap-4 p-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/5 transition-all group text-left"
                                 >
-                                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
-                                        <MessageCircle className="w-6 h-6 text-blue-500 group-hover:text-white" />
+                                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:bg-[#FF5000] transition-colors">
+                                        <MessageCircle className="w-6 h-6 text-blue-500 group-hover:text-white" strokeWidth={1.2} />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-white text-lg">{t('chat', 'sendMessage')}</h4>
@@ -138,8 +138,8 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                     onClick={() => setViewMode('video_selection')}
                                     className="flex items-center gap-4 p-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/5 transition-all group text-left"
                                 >
-                                    <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500 transition-colors">
-                                        <Video className="w-6 h-6 text-orange-500 group-hover:text-white" />
+                                    <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center group-hover:bg-[#FF5000] transition-colors">
+                                        <Video className="w-6 h-6 text-orange-500 group-hover:text-white" strokeWidth={1.2} />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-white text-lg">{t('chat', 'videoCall')}</h4>

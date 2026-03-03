@@ -1,221 +1,111 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
+import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, ShoppingCart, Trash2, ArrowLeft } from 'lucide-react';
-import { useWishlistStore } from '@/store/wishlistStore';
-import { useCartStore } from '@/store/cartStore';
-import { formatPrice } from '@/lib/utils';
-import toast from 'react-hot-toast';
-import { useAuth } from '@/context/AuthContext';
-import SignInRequired from '@/components/auth/SignInRequired';
+import Image from 'next/image';
+import { ChevronLeft, Heart, ShoppingCart } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-export default function WishlistPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { items, removeItem } = useWishlistStore();
-  const addToCart = useCartStore((state) => state.addItem);
-
-  const handleRemoveItem = (productId: string, productName: string) => {
-    removeItem(productId);
-    toast.success(`${productName} хасагдлаа`, {
-      duration: 2000,
-      position: 'top-right',
-      icon: '💔',
-      style: {
-        borderRadius: '999px',
-        padding: '12px 20px',
-      },
-    });
-  };
-
-  const handleAddToCart = (product: any) => {
-    addToCart(product);
-    toast.success('Сагсанд нэмэгдлээ', {
-      duration: 2000,
-      position: 'top-right',
-      style: {
-        background: '#1e293b',
-        color: 'white',
-        fontWeight: '500',
-        borderRadius: '999px',
-        padding: '12px 20px',
-      },
-    });
-  };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+const SAVED_ITEMS = [
+  {
+    id: 'W-1',
+    name: 'Эрэгтэй арьсан хүрэм',
+    price: 350000,
+    rating: 4.8,
+    image: 'https://res.cloudinary.com/dc127wztz/image/upload/v1770896452/banner1_nw6nok.png',
+  },
+  {
+    id: 'W-2',
+    name: 'Эмэгтэй өвлийн гутал',
+    price: 185000,
+    rating: 4.5,
+    image: 'https://res.cloudinary.com/dc127wztz/image/upload/v1770896152/banner_qhjffv.png',
+  },
+  {
+    id: 'W-3',
+    name: 'Ухаалаг бугуйн цаг',
+    price: 120000,
+    rating: 5.0,
+    image: 'https://res.cloudinary.com/dc127wztz/image/upload/v1770896452/banner1_nw6nok.png',
+  },
+  {
+    id: 'W-4',
+    name: 'Арьс арчилгааны багц',
+    price: 95000,
+    rating: 4.9,
+    image: 'https://res.cloudinary.com/dc127wztz/image/upload/v1770896152/banner_qhjffv.png',
   }
+];
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-50 pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SignInRequired 
-            title="Таны хүслийн жагсаалт"
-            description="Хадгалсан бараануудаа харахын тулд нэвтрэх шаардлагатай"
-            iconType="wishlist"
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <div className="min-h-screen bg-slate-50 pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center py-20"
-          >
-            <div className="inline-flex items-center justify-center w-24 h-24 bg-slate-100 rounded-full mb-6">
-              <Heart className="w-12 h-12 text-slate-400" strokeWidth={1.5} />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-3">Таны хүслийн жагсаалт хоосон байна</h2>
-            <p className="text-slate-600 mb-8">Бараагаа хадгалж эхлээрэй</p>
-            <Link href="/">
-              <button className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-full font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]">
-                <ArrowLeft className="w-5 h-5" strokeWidth={2} />
-                Худалдан авалт үргэлжлүүлэх
-              </button>
-            </Link>
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
+export default function SavedItemsPage() {
+  const [items, setItems] = useState(SAVED_ITEMS);
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-24 pb-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F5F5F5] font-sans pb-10">
+      {/* Header */}
+      <div className="bg-white h-[56px] flex items-center px-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] sticky top-0 z-50">
+        <Link href="/profile" className="p-2 -ml-2 text-[#1A1A1A]">
+          <ChevronLeft className="w-6 h-6" strokeWidth={2} />
+        </Link>
+        <h1 className="flex-1 text-center text-[16px] font-bold text-[#1A1A1A] pr-8">
+          Хадгалсан бараа
+        </h1>
+      </div>
 
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
-          <Link href="/">
-            <motion.button
-              whileHover={{ x: -4 }}
-              className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" strokeWidth={2} />
-              <span className="text-sm font-medium">Буцах</span>
-            </motion.button>
-          </Link>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Хүслийн жагсаалт</h1>
-          <p className="text-slate-600">{items.length} бараа</p>
-        </motion.div>
-
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          <AnimatePresence mode="popLayout">
-            {items.map((product, index) => (
+      <div className="p-4">
+        {items.length > 0 ? (
+          <div className="grid grid-cols-2 gap-3">
+            {items.map((item) => (
               <motion.div
-                key={product.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                layout
-                className="group"
+                key={item.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="bg-white rounded-[14px] overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-gray-100 flex flex-col"
               >
-                <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
-
-                  {/* Image Container */}
-                  <div className="relative aspect-square bg-slate-100">
-                    <Link href={`/product/${product.id}`}>
-                      <Image
-                        src={product.image || '/placeholder.png'}
-                        alt={product.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        loading="lazy"
-                      />
-                    </Link>
-
-                    {/* Stock Status Badge */}
-                    {product.stockStatus && (
-                      <div className="absolute top-3 left-3 z-10">
-                        <div className={`px-2.5 py-1 rounded-full text-[10px] font-medium backdrop-blur-sm border ${product.stockStatus === 'in-stock'
-                            ? 'bg-emerald-50/90 text-emerald-700 border-emerald-200/50'
-                            : 'bg-orange-50/90 text-orange-700 border-orange-200/50'
-                          }`}>
-                          {product.stockStatus === 'in-stock' ? 'In Stock' : 'Pre-order'}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Remove from Wishlist Button */}
-                    <button
-                      onClick={() => handleRemoveItem(product.id, product.name)}
-                      className="absolute top-3 right-3 z-10 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:bg-red-50 text-red-500 flex items-center justify-center transition-all hover:scale-110 active:scale-90"
-                    >
-                      <Trash2 className="w-4 h-4" strokeWidth={2} />
-                    </button>
+                <div className="relative aspect-square bg-gray-50">
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full text-[#FF6B00]">
+                    <Heart className="w-4 h-4 fill-[#FF6B00]" strokeWidth={2} />
                   </div>
+                </div>
 
-                  {/* Product Info */}
-                  <div className="p-4">
-                    <Link href={`/product/${product.id}`}>
-                      <h3 className="text-sm font-medium text-slate-900 mb-2 line-clamp-2 leading-relaxed hover:text-orange-600 transition-colors">
-                        {product.name}
-                      </h3>
-                    </Link>
+                <div className="p-3 flex flex-col flex-1">
+                  <h3 className="text-[13px] font-bold text-[#1A1A1A] line-clamp-2 leading-snug mb-2 flex-1">
+                    {item.name}
+                  </h3>
 
-                    {/* Price & Rating */}
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-lg font-semibold text-slate-900">
-                        {formatPrice(product.price)}
-                      </span>
-                      {product.rating && (
-                        <div className="flex items-center gap-1">
-                          <div className="flex gap-0.5">
-                            {[...Array(5)].map((_, i) => (
-                              <svg
-                                key={i}
-                                className={`w-3 h-3 ${i < Math.floor(product.rating || 0)
-                                    ? 'text-slate-900 fill-current'
-                                    : 'text-slate-300 fill-current'
-                                  }`}
-                                viewBox="0 0 20 20"
-                              >
-                                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                              </svg>
-                            ))}
-                          </div>
-                          <span className="text-[10px] text-slate-400 ml-0.5">
-                            {product.rating}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Add to Cart Button */}
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="w-full py-2.5 bg-slate-900 text-white text-xs font-medium rounded-full hover:bg-slate-800 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-                    >
-                      <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      <span>Сагсанд нэмэх</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[15px] font-black text-[#FF6B00]">
+                      {item.price.toLocaleString()}₮
+                    </span>
+                    <button className="w-8 h-8 rounded-full bg-[#FF6B00] flex items-center justify-center text-white shadow-md active:scale-95 transition-transform">
+                      <ShoppingCart className="w-4 h-4" strokeWidth={2.5} />
                     </button>
                   </div>
                 </div>
               </motion.div>
             ))}
-          </AnimatePresence>
-        </div>
+          </div>
+        ) : (
+          <div className="py-24 flex flex-col items-center justify-center text-center px-4">
+            <div className="w-[100px] h-[100px] rounded-full bg-white shadow-sm flex items-center justify-center mb-6 relative">
+              <Heart className="w-12 h-12 text-[#FF6B00]" strokeWidth={1.5} />
+              <div className="absolute -bottom-2 -right-2 bg-orange-100 rounded-full w-8 h-8 flex items-center justify-center border-2 border-white">
+                <span className="text-orange-500 font-bold text-xs">0</span>
+              </div>
+            </div>
+            <h3 className="text-[18px] font-bold text-[#1A1A1A] mb-2">Хадгалсан бараа байхгүй байна</h3>
+            <p className="text-[14px] text-[#999999] mb-8">Таалагдсан барааныхаа зүрхэн дээр дарж энд хадгалаарай.</p>
+            <Link href="/" className="px-8 py-3.5 bg-gradient-to-r from-[#FF6B00] to-[#FF8C00] text-white text-[15px] font-bold rounded-xl shadow-[0_4px_12px_rgba(255,107,0,0.3)] hover:opacity-90 transition-opacity">
+              Дэлгүүр хэсэх
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

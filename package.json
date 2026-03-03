@@ -18,6 +18,7 @@
     "ai": "^6.0.97",
     "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.4",
     "framer-motion": "^12.31.1",
     "jose": "^6.1.3",

@@ -8,4 +8,5 @@ export interface Category {
   icon: string;
   image?: string; // Banner image for the category
   subcategories?: Subcategory[];
+  productCount?: number;
 }

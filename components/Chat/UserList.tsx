@@ -13,6 +13,9 @@ interface User {
     image?: string;
     userId: string;
     role?: string;
+    isOnline?: boolean;
+    lastMessage?: string;
+    unreadCount?: number;
 }
 
 interface UserListProps {
@@ -64,21 +67,21 @@ export default function UserList({ users, selectedUser, onSelectUser }: UserList
                         <button
                             key={user._id}
                             onClick={() => onSelectUser(user)}
-                            className={`w-full px-4 py-3 flex items-center gap-4 transition-all duration-300 relative group
+                            className={`w-full px-4 py-4 flex items-center gap-4 transition-all duration-300 relative group
                                 ${selectedUser?._id === user._id 
-                                    ? 'bg-orange-500/10' 
+                                    ? 'bg-amber-500/10' 
                                     : 'hover:bg-white/5'
                                 }`}
                         >
                             {selectedUser?._id === user._id && (
                                 <motion.div 
                                     layoutId="active-indicator"
-                                    className="absolute left-0 top-2 bottom-2 w-1 bg-orange-500 rounded-r-full shadow-[0_0_10px_rgba(245,126,32,0.5)]" 
+                                    className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]" 
                                 />
                             )}
                             
                             <div className="relative shrink-0">
-                                <div className={`w-12 h-12 rounded-2xl overflow-hidden bg-slate-800 ring-2 ring-white/5 group-hover:ring-orange-500/30 transition-all`}>
+                                <div className={`w-12 h-12 rounded-2xl overflow-hidden bg-slate-800 ring-2 ${selectedUser?._id === user._id ? 'ring-amber-500/50' : 'ring-white/5'} group-hover:ring-amber-500/30 transition-all`}>
                                     {user.image ? (
                                         <Image src={user.image} alt={user.name || ''} fill className="object-cover" />
                                     ) : (
@@ -87,6 +90,9 @@ export default function UserList({ users, selectedUser, onSelectUser }: UserList
                                         </div>
                                     )}
                                 </div>
+                                {/* Online Status Dot */}
+                                <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 ${user.isOnline ? 'bg-emerald-500' : 'bg-slate-500'}`} />
+                                
                                 {user.role === 'admin' && (
                                     <div className="absolute -bottom-1 -right-1 bg-indigo-500 text-white p-1 rounded-lg shadow-lg">
                                         <ShieldCheck className="w-3 h-3" />
@@ -95,20 +101,33 @@ export default function UserList({ users, selectedUser, onSelectUser }: UserList
                             </div>
 
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-0.5">
+                                <div className="flex items-center justify-between mb-1">
                                     <p className={`text-sm font-bold truncate transition-colors ${
-                                        selectedUser?._id === user._id ? 'text-orange-500' : 'text-slate-200'
+                                        selectedUser?._id === user._id ? 'text-amber-500' : 'text-slate-200'
                                     }`}>
                                         {user.name || 'User'}
                                     </p>
-                                    {user.role === 'admin' && (
-                                        <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
-                                            Admin
-                                        </span>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        {user.unreadCount && user.unreadCount > 0 ? (
+                                            <span className="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                                                {user.unreadCount}
+                                            </span>
+                                        ) : null}
+                                        {user.role === 'admin' && (
+                                            <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                                                Admin
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                                <p className="text-xs text-slate-500 truncate font-medium">
-                                    {user.email || user.phone}
+                                <p className="text-[11px] text-slate-500 truncate font-medium">
+                                    {user.lastMessage ? (
+                                        <span className={user.unreadCount && user.unreadCount > 0 ? 'text-slate-300 font-bold' : ''}>
+                                            {user.lastMessage.substring(0, 30)}{user.lastMessage.length > 30 ? '...' : ''}
+                                        </span>
+                                    ) : (
+                                        user.email || user.phone
+                                    )}
                                 </p>
                             </div>
                         </button>

@@ -49,6 +49,10 @@ export async function POST(req: NextRequest) {
     // Extract phone from shipping info for guest order tracking
     const phone = body.shipping?.phone || body.phone || null;
 
+    // Check for pre-order items
+    const hasPreOrder = body.items?.some((item: any) => item.stockStatus === 'pre-order') || false;
+    const deliveryEstimate = hasPreOrder ? '7-14 хоног' : 'Өнөөдөр - Маргааш';
+
     const result = await orders.insertOne({
       userId,
       phone, // Store phone at top level for easy querying
@@ -56,11 +60,39 @@ export async function POST(req: NextRequest) {
       total: body.total || 0,
       status: body.status || 'pending',
       deliveryMethod: body.deliveryMethod || 'delivery',
+      paymentMethod: body.paymentMethod || 'cash',
       shipping: body.shipping || {},
       shippingCost: body.shippingCost || 0,
+      hasPreOrder,
+      deliveryEstimate,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+
+    // Admin Notification (Non-blocking)
+    try {
+      const usersCollection = await getCollection('users');
+      const notificationsCollection = await getCollection('notifications');
+      
+      const admins = await usersCollection.find({ role: 'admin' }).toArray();
+      
+      if (admins.length > 0) {
+        const notifications = admins.map(admin => ({
+          userId: admin._id.toString(),
+          title: '🛒 Шинэ захиалга ирлээ!',
+          message: `${body.shipping?.fullName || 'Хэрэглэгч'} - ${body.total}₮`,
+          type: 'order',
+          isRead: false,
+          link: '/admin/orders',
+          createdAt: new Date()
+        }));
+        
+        await notificationsCollection.insertMany(notifications);
+      }
+    } catch (notifError) {
+      console.error('Failed to send admin notifications:', notifError);
+      // Continue execution - notification failure shouldn't block order creation
+    }
 
     // Decrement inventory for each purchased item
     for (const item of (body.items || [])) {
@@ -129,5 +161,76 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ orderId: result.insertedId.toString() }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { orderId, status } = body;
+
+    if (!orderId || !status) {
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+    }
+
+    // Only allow cancellation for now via this specific endpoint logic
+    // Admin status updates might go through a different flow or check role here
+    if (status !== 'cancelled') {
+        return NextResponse.json({ error: 'Invalid status update via this endpoint' }, { status: 400 });
+    }
+
+    const orders = await getCollection('orders');
+    const order = await orders.findOne({ _id: new ObjectId(orderId) });
+
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    if (order.userId !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    if (order.status !== 'pending') {
+      return NextResponse.json(
+        { error: 'Баталгаажсан захиалгыг цуцлах боломжгүй' }, 
+        { status: 400 }
+      );
+    }
+
+    await orders.updateOne(
+      { _id: new ObjectId(orderId) },
+      { 
+        $set: { 
+          status: 'cancelled',
+          updatedAt: new Date()
+        } 
+      }
+    );
+
+    // Send notification to customer
+    try {
+        const notificationsCollection = await getCollection('notifications');
+        await notificationsCollection.insertOne({
+            userId: order.userId,
+            title: '❌ Захиалга цуцлагдлаа',
+            message: 'Таны захиалга амжилттай цуцлагдлаа.',
+            type: 'order',
+            isRead: false,
+            link: '/orders',
+            createdAt: new Date()
+        });
+    } catch (error) {
+        console.error('Failed to send cancellation notification:', error);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Order patch error:', error);
+    return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
   }
 }

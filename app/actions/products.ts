@@ -9,6 +9,8 @@ export type ProductFormData = {
   description: string;
   price: number;
   originalPrice?: number;
+  discountPercent?: number;
+  sections?: string[];
   image: string;
   category: string;
   stockStatus: string;
@@ -17,7 +19,8 @@ export type ProductFormData = {
   model?: string;
   delivery?: string;
   paymentMethods?: string;
-  attributes?: Record<string, string>; // { attributeId: value }
+  attributes?: Record<string, string>;
+  featured?: boolean;
 };
 
 export async function createProduct(data: ProductFormData) {

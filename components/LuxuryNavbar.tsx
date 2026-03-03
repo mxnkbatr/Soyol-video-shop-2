@@ -150,8 +150,8 @@ export default function LuxuryNavbar() {
         animate={{ y: 0 }}
         transition={{ type: 'spring', stiffness: 100 }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 pb-safe ${scrolled
-          ? 'bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm'
-          : 'bg-white/60 backdrop-blur-md border-b border-gray-100'
+          ? 'bg-white border-b border-orange-100/50 shadow-lg shadow-orange-50/50'
+          : 'bg-white border-b border-gray-100/30'
           }`}
         style={{
           backdropFilter: 'blur(12px)',
@@ -159,7 +159,7 @@ export default function LuxuryNavbar() {
       >
         <div className="max-w-7xl mx-auto">
           <div className="px-4 sm:px-6 lg:px-8">
-            <div className={`relative z-50 flex items-center justify-between transition-all duration-300 ${scrolled ? 'h-16 lg:h-18' : 'h-20 lg:h-24'
+            <div className={`relative z-50 flex items-center justify-between transition-all duration-300 ${scrolled ? 'h-16 lg:h-18' : 'h-16 lg:h-24'
               }`}>
 
               <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
@@ -172,15 +172,15 @@ export default function LuxuryNavbar() {
                     className="text-2xl font-black tracking-tighter leading-none text-[#FF5000]"
                     whileHover={{
                       scale: 1.05,
-                      textShadow: "0 0 8px rgba(255,80,0,0.5)"
+                      textShadow: "0 0 12px rgba(255,80,0,0.4)"
                     }}
                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
                   >
                     Soyol
                   </motion.h1>
                   <motion.span
-                    className="text-[9px] font-bold tracking-[0.2em] text-slate-500 uppercase leading-none ml-0.5 mt-0.5"
-                    whileHover={{ color: "#475569" }}
+                    className="text-[9px] font-bold tracking-[0.2em] text-slate-400 uppercase leading-none ml-0.5 mt-0.5"
+                    whileHover={{ color: "#FF5000" }}
                   >
                     Video Shop
                   </motion.span>
@@ -293,24 +293,24 @@ export default function LuxuryNavbar() {
                       <motion.button
                         type="button"
                         onClick={() => setUserMenuOpen((o) => !o)}
-                        whileHover={{ scale: 1.15, y: -2 }}
+                        whileHover={{ scale: 1.1, y: -2 }}
                         whileTap={{ scale: 0.95 }}
-                        className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-xl transition-colors group cursor-pointer border border-transparent hover:border-gray-200"
+                        className="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded-2xl transition-colors group cursor-pointer border border-transparent hover:border-gray-200"
                       >
                         {user?.imageUrl ? (
                           <img
                             src={user.imageUrl}
                             alt=""
-                            className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                            className="w-8 h-8 rounded-xl object-cover border border-gray-100"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center">
                             <span className="text-orange-500 font-bold text-xs">{
                               (user?.name?.[0] || user?.phone?.[0] || 'U').toUpperCase()
                             }</span>
                           </div>
                         )}
-                        <span className="hidden sm:inline text-sm font-medium text-gray-700 group-hover:text-orange-500 max-w-[120px] truncate">
+                        <span className="hidden sm:inline text-sm font-semibold text-gray-700 group-hover:text-[#FF5000] max-w-[120px] truncate">
                           {user?.name || user?.phone || t('nav', 'profile')}
                         </span>
                       </motion.button>
@@ -321,7 +321,7 @@ export default function LuxuryNavbar() {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.96 }}
                             transition={{ duration: 0.18, ease: [0.25, 0.46, 0.45, 0.94] }}
-                            className="absolute right-0 top-full mt-2 w-64 rounded-xl bg-white shadow-xl border border-gray-200 overflow-hidden z-[100]"
+                            className="absolute right-0 top-full mt-2 w-64 rounded-2xl bg-white shadow-xl border border-gray-200 overflow-hidden z-[100]"
                           >
                             <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-b from-gray-50 to-white">
                               <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">{t('nav', 'email')}</p>
@@ -376,18 +376,18 @@ export default function LuxuryNavbar() {
 
                 <Link href="/wishlist">
                   <motion.div
-                    whileHover={{ scale: 1.15, y: -2 }}
+                    whileHover={{ scale: 1.1, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     animate={wishlistBump ? { x: [0, -4, 4, -4, 4, 0] } : {}}
                     transition={{ duration: 0.4 }}
-                    className="relative p-2 hover:bg-gray-50 rounded-lg transition-colors group cursor-pointer"
+                    className="relative p-2 hover:bg-gray-50 rounded-2xl transition-colors group cursor-pointer border border-transparent hover:border-gray-100"
                   >
-                    <Heart className={`w-5 h-5 transition-colors ${mounted && wishlistItemsCount > 0 ? 'text-orange-500 fill-orange-50' : 'text-gray-600 group-hover:text-orange-500'}`} strokeWidth={1.2} />
+                    <Heart className={`w-5 h-5 transition-colors ${mounted && wishlistItemsCount > 0 ? 'text-[#FF5000] fill-orange-50' : 'text-gray-600 group-hover:text-[#FF5000]'}`} strokeWidth={1.2} />
                     {mounted && wishlistItemsCount > 0 && (
                       <motion.span
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF5000] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm"
                       >
                         {wishlistItemsCount}
                       </motion.span>
@@ -397,25 +397,25 @@ export default function LuxuryNavbar() {
 
 
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.1, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="hidden md:flex items-center gap-2 p-2 rounded-2xl hover:bg-slate-50 relative group transition-all"
+                  className="hidden md:flex items-center gap-2 p-2 rounded-2xl hover:bg-gray-50 relative group transition-all border border-transparent hover:border-gray-100"
                   onClick={() => router.push('/cart')}
                 >
-                  <ShoppingBag className="w-5 h-5 text-gray-600 group-hover:text-orange-500 transition-colors" strokeWidth={1.2} />
+                  <ShoppingBag className="w-5 h-5 text-gray-600 group-hover:text-[#FF5000] transition-colors" strokeWidth={1.2} />
                   {mounted && cartItemsCount > 0 && (
                     <>
                       <motion.span
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center"
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF5000] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm"
                       >
                         {cartItemsCount}
                       </motion.span>
                       <motion.span
                         animate={{ scale: [1, 1.5, 1], opacity: [0.7, 0, 0.7] }}
                         transition={{ duration: 2, repeat: Infinity }}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full pointer-events-none"
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF5000] rounded-full pointer-events-none"
                       />
                     </>
                   )}
@@ -425,7 +425,7 @@ export default function LuxuryNavbar() {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className="md:hidden p-2 hover:bg-gray-50 rounded-lg transition-colors text-gray-600"
+                  className="md:hidden p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-600 border border-transparent active:border-gray-200"
                 >
                   <Menu className="w-6 h-6" strokeWidth={1.2} />
                 </button>
@@ -434,11 +434,11 @@ export default function LuxuryNavbar() {
           </div>
 
           {/* Mobile Search Bar */}
-          <div className={`lg:hidden relative z-10 transition-all duration-500 overflow-hidden ${scrolled ? 'h-0 opacity-0 py-0 mt-0' : 'h-auto py-2 opacity-100 mt-6'}`}>
-            <form onSubmit={handleSearch} className="relative w-full px-4">
+          <div className={`lg:hidden relative z-10 transition-all duration-500 overflow-hidden ${scrolled ? 'h-0 opacity-0 py-0 mt-0' : 'h-auto py-2 opacity-100 mt-2 bg-white border-b border-gray-100 shadow-sm'}`}>
+            <form onSubmit={handleSearch} className="relative w-full px-4 mb-2">
               <motion.div
                 layout
-                className={`relative flex items-center transition-all duration-300 rounded-2xl shadow-sm bg-gray-50/80 backdrop-blur-xl ${searchQuery ? 'bg-white shadow-md' : ''} h-12`}
+                className={`relative flex items-center transition-all duration-300 rounded-2xl shadow-sm bg-gray-50 ${searchQuery ? 'bg-white shadow-md' : ''} h-12`}
               >
                 <div className="pl-4 flex items-center">
                   <Search className="w-5 h-5 text-gray-400" strokeWidth={1.5} />
@@ -617,11 +617,10 @@ export default function LuxuryNavbar() {
                           e.stopPropagation();
                           setLanguage('MN');
                         }}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${
-                          language === 'MN' 
-                            ? 'bg-white text-orange-600 shadow-sm' 
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${language === 'MN'
+                            ? 'bg-white text-orange-600 shadow-sm'
                             : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                          }`}
                       >
                         MN
                       </button>
@@ -630,11 +629,10 @@ export default function LuxuryNavbar() {
                           e.stopPropagation();
                           setLanguage('EN');
                         }}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${
-                          language === 'EN' 
-                            ? 'bg-white text-orange-600 shadow-sm' 
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-200 ${language === 'EN'
+                            ? 'bg-white text-orange-600 shadow-sm'
                             : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                          }`}
                       >
                         EN
                       </button>
@@ -660,51 +658,53 @@ export default function LuxuryNavbar() {
       </AnimatePresence>
 
       {/* Mobile Bottom Navigation - Redesigned */}
-      <div className="lg:hidden fixed bottom-6 left-4 right-4 z-[100] bg-white/80 backdrop-blur-xl rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/20">
-        <div className="flex justify-around items-center px-6 py-3">
-          {mobileNavItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-            const Icon = item.icon;
+      {!pathname.includes('/product/') && (
+        <div className="lg:hidden fixed bottom-6 left-4 right-4 z-[100] bg-white/80 backdrop-blur-xl rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/20">
+          <div className="flex justify-around items-center px-6 py-3">
+            {mobileNavItems.map((item) => {
+              const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              const Icon = item.icon;
 
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="relative flex flex-col items-center justify-center w-full"
-                onClick={() => {
-                  if (item.name === t('nav', 'cart')) {
-                    router.push('/cart');
-                  }
-                }}
-              >
-                <div className="relative">
-                  <motion.div
-                    animate={isActive ? { y: -2 } : { y: 0 }}
-                    className={`relative p-2 rounded-full transition-all duration-300 ${isActive ? 'text-gray-900' : 'text-gray-400'}`}
-                  >
-                    <Icon className="w-6 h-6" strokeWidth={isActive ? 2 : 1.5} />
-                    
-                    {/* Active Dot Indicator */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeDot"
-                        className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-900 rounded-full"
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="relative flex flex-col items-center justify-center w-full"
+                  onClick={() => {
+                    if (item.name === t('nav', 'cart')) {
+                      router.push('/cart');
+                    }
+                  }}
+                >
+                  <div className="relative">
+                    <motion.div
+                      animate={isActive ? { y: -2 } : { y: 0 }}
+                      className={`relative p-2 rounded-full transition-all duration-300 ${isActive ? 'text-gray-900' : 'text-gray-400'}`}
+                    >
+                      <Icon className="w-6 h-6" strokeWidth={isActive ? 2 : 1.5} />
+
+                      {/* Active Dot Indicator */}
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeDot"
+                          className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-gray-900 rounded-full"
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      )}
+                    </motion.div>
+
+                    {mounted && item.count !== undefined && item.count > 0 && (
+                      <span className={`absolute -top-1 -right-1 w-4 h-4 ${item.badgeColor || 'bg-[#FF5000]'} text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm`}>
+                        {item.count}
+                      </span>
                     )}
-                  </motion.div>
-
-                  {mounted && item.count !== undefined && item.count > 0 && (
-                    <span className={`absolute -top-1 -right-1 w-4 h-4 ${item.badgeColor || 'bg-[#FF5000]'} text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-sm`}>
-                      {item.count}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            );
-          })}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

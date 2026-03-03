@@ -115,6 +115,12 @@ const google = createGoogleGenerativeAI({
         }
       }
 
+      console.log('--- Calling Gemini API ---');
+      const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      console.log('API Key configured:', !!apiKey);
+      if (apiKey) console.log('API Key prefix:', apiKey.substring(0, 4) + '...');
+      console.log('Model: gemini-2.5-flash');
+
       const result = await streamText({
     model: google('gemini-2.5-flash'),
     system: `
@@ -135,16 +141,16 @@ const google = createGoogleGenerativeAI({
     Output Requirements:
     - ALWAYS give a clear final answer in Mongolian after any tool call.
     - NEVER finish the conversation with tool-calls. Always continue and return a final assistant message.
-    - When 'searchProducts' returns products (array), present a short helpful summary,
-      THEN for each relevant product include a card marker in this exact format on its own line:
+    - If products are found, start the response with: "Танд дараах бараануудыг санал болгож байна ✨"
+    - PRESENT products by including card markers in this exact format on its own line:
         [PRODUCT_CARD: {"id":"...","name":"...","price":1234,"image":"..."}]
       Only include id, name, price, image keys in the card JSON.
     - Do NOT print raw tool call JSON; summarize first, then include PRODUCT_CARD tags.
     - Use friendly, concise sentences. Avoid repeating the same content.
-    - If products are found, start the response with: "Танд дараах бараануудыг санал болгож байна ✨"
     - Always end your response with: "Танд өөр туслах зүйл байна уу? 😊"
     - Never say phrases implying no warranty (e.g., "баталгаа байхгүй"). Use helpful phrasing instead.
-    - If the user sends an image, infer the likely product type from the image and use 'searchProducts' with a concise Mongolian query.
+    - If the user sends an image, analyze it using your multimodal capabilities. Infer the likely product type, brand, or model from the image and use 'searchProducts' with a concise Mongolian query to find matching items in the shop.
+    - If the image contains a specific product, describe what you see and suggest matching products from our catalog.
     
     Context:
     - Today's date is ${new Date().toLocaleDateString('mn-MN')}.

@@ -15,6 +15,9 @@ interface Product {
   name: string;
   description?: string | null;
   price: number;
+  originalPrice?: number;
+  discountPercent?: number;
+  sections?: string[];
   image?: string | null;
   category: string;
   stockStatus?: string;
@@ -97,8 +100,15 @@ function PremiumProductGrid({ products, featuredProducts }: PremiumProductGridPr
               {/* Image Section */}
               <div className="relative aspect-square overflow-hidden bg-gray-50/50">
 
-                {/* Top Left: Category Pill OR Featured Badge */}
-                <div className="absolute top-3 left-3 z-10">
+                {/* Top Left: Category Pill OR Discount Badge */}
+                <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+                  {product.discountPercent && product.discountPercent > 0 && (
+                    <div className="px-2.5 py-1 bg-[#FF3B30] rounded-lg flex items-center shadow-lg shadow-red-500/20">
+                      <span className="text-[10px] sm:text-[11px] font-black text-white">
+                        -{product.discountPercent}%
+                      </span>
+                    </div>
+                  )}
                   {isFeatured ? (
                     <div className="px-2.5 py-1 bg-white/80 backdrop-blur-md border border-white/20 rounded-full flex items-center shadow-sm">
                       <span className="text-[9px] sm:text-[10px] font-extrabold tracking-widest text-slate-900 uppercase">
@@ -162,30 +172,27 @@ function PremiumProductGrid({ products, featuredProducts }: PremiumProductGridPr
 
                 {/* Price Section: Large Numbers & Badges */}
                 <div className="mt-auto mb-4">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     {/* Current Price */}
                     <div className="flex items-start">
-                      <span className="text-xs font-bold text-orange-500 mr-0.5 mt-1">
-                        {currency === 'USD' ? '$' : '₮'}
+                      <span className="text-sm font-bold text-[#FF6B00] mr-0.5 mt-1">
+                        ₮
                       </span>
-                      <span className="text-2xl sm:text-3xl font-bold text-orange-500 tracking-tight">
+                      <span className="text-2xl sm:text-2xl font-black text-[#FF6B00] tracking-tight">
                         {formatPriceWithCurrency(product.price).replace(/[^\d.,]/g, '')}
                       </span>
                     </div>
 
                     {/* Old Price */}
-                    {oldPrice && (
-                      <span className="text-xs font-medium text-gray-400 line-through decoration-gray-300">
-                        {Math.round(oldPrice).toLocaleString()}
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <span className="text-xs font-medium text-[#AAA] line-through decoration-[#AAA]/50">
+                        {Math.round(product.originalPrice).toLocaleString()}₮
                       </span>
                     )}
 
-                    {/* Discount Tag - Green Pill like screenshot */}
-                    {displayDiscount > 0 && (
-                      <div className="ml-auto px-2 py-0.5 bg-emerald-100 rounded-md flex items-center gap-1">
-                        <Zap className="w-2.5 h-2.5 text-emerald-600 fill-emerald-600" />
-                        <span className="text-[10px] font-bold text-emerald-700">-{displayDiscount}%</span>
-                      </div>
+                    {/* Arrow for discount */}
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <ArrowRight className="w-3 h-3 text-[#AAA]" />
                     )}
                   </div>
                 </div>

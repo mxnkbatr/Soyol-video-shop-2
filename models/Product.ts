@@ -4,13 +4,16 @@ export interface Product {
   id: string;
   name: string;
   image?: string | null;
-  price: number;
+  price: number; // Final price after discount
+  originalPrice?: number; // Base price before discount
+  discountPercent?: number; // 0-100
   description?: string;
   rating?: number;
   category: string;
   featured?: boolean;
   wholesale?: boolean;
-  stockStatus?: StockStatus; // 'in-stock' = Бэлэн байгаа, 'pre-order' = Захиалгаар
-  inventory?: number; // Үлдэгдэл тоо (зөвхөн in-stock бараанд)
+  stockStatus?: StockStatus;
+  inventory?: number;
+  sections?: string[]; // ['Шинэ', 'Бэлэн', etc.]
   attributes?: Record<string, string>;
 }

@@ -41,6 +41,7 @@ export default function CheckoutPage() {
   const [deliveryMethod, setDeliveryMethod] = useState<'delivery' | 'pickup'>('delivery');
   const [addressTab, setAddressTab] = useState<'saved' | 'new'>('saved');
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState('qpay');
   
   const { data: addresses, isLoading: isLoadingAddresses } = useSWR<Address[]>(
     user ? '/api/user/addresses' : null,
@@ -119,6 +120,11 @@ export default function CheckoutPage() {
   const DELIVERY_FEE = deliveryMethod === 'delivery' ? 5000 : 0;
   const grandTotal = getTotalPrice() + DELIVERY_FEE;
 
+  const hasPreOrder = items.some(item => (item as any).stockStatus === 'pre-order');
+  const inStockCount = items.filter(item => (item as any).stockStatus !== 'pre-order').length;
+  const preOrderCount = items.filter(item => (item as any).stockStatus === 'pre-order').length;
+  const deliveryEstimate = hasPreOrder ? '7-14 хоног' : 'Өнөөдөр - Маргааш';
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -149,9 +155,13 @@ export default function CheckoutPage() {
           productImage: item.image || null,
           quantity: item.quantity,
           price: item.price,
+          stockStatus: (item as any).stockStatus || 'in-stock',
         })),
         total: grandTotal,
-        status: 'paid',
+        status: 'pending',
+        hasPreOrder,
+        deliveryEstimate,
+        paymentMethod,
         deliveryMethod, // Add delivery method to order data
         shipping: deliveryMethod === 'delivery' ? formData : {
           ...formData,
@@ -449,7 +459,7 @@ export default function CheckoutPage() {
                     <MapPin className="w-5 h-5 text-orange-600 mt-1 flex-shrink-0" />
                     <div>
                       <h4 className="font-bold text-gray-900 mb-1">Төв салбар</h4>
-                      <p className="text-sm text-gray-600 mb-2">Сүхбаатар дүүрэг, 1-р хороо, Blue Sky Tower, 3 давхар, 305 тоот</p>
+                      <p className="text-sm text-gray-600 mb-2">Ундрам плаза Unic office 5давхар 501тоот</p>
                       <p className="text-sm text-gray-600"><span className="font-semibold">Цагийн хуваарь:</span> 10:00 - 20:00 (Өдөр бүр)</p>
                       <p className="text-sm text-gray-600 mt-1"><span className="font-semibold">Утас:</span> 7711-8899</p>
 
@@ -474,8 +484,8 @@ export default function CheckoutPage() {
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">Захиалгын хураангуй</h2>
               </div>
               <div className="space-y-4 mb-6 max-h-60 sm:max-h-96 overflow-y-auto pr-1 custom-scrollbar">
-                {items.map((item) => (
-                  <div key={item.id} className="flex gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors">
+                {items.map((item, idx) => (
+                  <div key={item.id || idx} className="flex gap-3 p-2 hover:bg-gray-50 rounded-xl transition-colors">
                     <div className="relative w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100">
                       <Image src={item.image || '/placeholder.png'} alt={item.name} fill className="object-cover" sizes="56px" />
                     </div>
@@ -489,10 +499,84 @@ export default function CheckoutPage() {
                   </div>
                 ))}
               </div>
+              {/* Delivery Time Info Box */}
+              {preOrderCount === 0 ? (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-green-600">✅</span>
+                    <span className="font-bold text-green-700 text-sm">Бүх бараа бэлэн байна</span>
+                  </div>
+                  <p className="text-xs text-green-600 pl-6">Хүргэлт: Өнөөдөр - Маргааш</p>
+                </div>
+              ) : inStockCount === 0 ? (
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-orange-600">✈️</span>
+                    <span className="font-bold text-orange-700 text-sm">Захиалгын бараа</span>
+                  </div>
+                  <p className="text-xs text-orange-600 pl-6">Хүргэлт: 7-14 хоног</p>
+                  <p className="text-xs text-orange-600 pl-6 mt-1">Бараа ирмэгц таньд мэдэгдэнэ</p>
+                </div>
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-yellow-600">⚠️</span>
+                    <span className="font-bold text-yellow-700 text-sm">Хоёр төрлийн бараа байна</span>
+                  </div>
+                  <div className="pl-6 text-xs text-yellow-600 space-y-1">
+                    <p>• {inStockCount} бэлэн бараа</p>
+                    <p>• {preOrderCount} захиалгын бараа</p>
+                    <p className="font-medium mt-1">Хүргэлт: 7-14 хоног (хамт хүргэнэ)</p>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3 pt-6 border-t border-dashed border-gray-200">
                 <div className="flex justify-between text-sm text-gray-600"><span>Барааны үнэ:</span><span className="font-bold">{formatPrice(getTotalPrice())}</span></div>
                 <div className="flex justify-between text-sm text-gray-600"><span>Хүргэлт:</span><span className="font-bold text-gray-900">{DELIVERY_FEE === 0 ? '0₮' : formatPrice(DELIVERY_FEE)}</span></div>
                 <div className="flex justify-between text-lg font-black pt-3 border-t border-gray-100"><span>Нийт:</span><span className="text-orange-600">{formatPrice(grandTotal)}</span></div>
+              </div>
+
+              {/* Payment Method Selector */}
+              <div className="mt-6 mb-6 pt-6 border-t border-dashed border-gray-200">
+                <h3 className="text-sm font-bold text-gray-900 mb-3">💳 Төлбөрийн арга</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'qpay', icon: '📱', label: 'QR кодоор', title: 'QPay' },
+                    { id: 'socialpay', icon: '💙', label: 'Голомт банк', title: 'SocialPay' },
+                    { id: 'card', icon: '💳', label: 'Visa/Mastercard', title: 'Банкны карт' },
+                    { id: 'cash', icon: '💵', label: 'Хүргэлтийн үед', title: 'Бэлнээр' },
+                  ].map((method) => (
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() => setPaymentMethod(method.id)}
+                      className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden ${
+                        paymentMethod === method.id
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="font-bold text-gray-900 text-sm mb-0.5 flex items-center gap-2">
+                        <span>{method.icon}</span>
+                        {method.title}
+                      </div>
+                      <div className="text-[10px] text-gray-500 font-medium">{method.label}</div>
+                      {paymentMethod === method.id && (
+                        <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-orange-500" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                
+                {paymentMethod === 'qpay' && (
+                  <div className="mt-3 p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50 flex flex-col items-center justify-center text-center">
+                    <div className="w-10 h-10 bg-gray-200 rounded-lg mb-2 flex items-center justify-center">
+                      <span className="text-xl">📱</span>
+                    </div>
+                    <p className="text-xs font-bold text-gray-500">QPay QR - Тун удахгүй нэмэгдэнэ</p>
+                  </div>
+                )}
               </div>
 
               <div className="hidden lg:block">

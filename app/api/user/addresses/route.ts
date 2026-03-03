@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-import { Address } from '@/models/User';
+import { Address, User } from '@/models/User';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'default-secret-key-change-me');
 
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     const userId = await getUser(req);
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const usersCollection = await getCollection('users');
+    const usersCollection = await getCollection<User>('users');
     const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         isDefault: data.isDefault || false
     };
 
-    const usersCollection = await getCollection('users');
+    const usersCollection = await getCollection<User>('users');
 
     // If new address is default, unset others
     if (newAddress.isDefault) {

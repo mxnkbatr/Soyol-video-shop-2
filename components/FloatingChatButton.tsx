@@ -49,6 +49,8 @@ export default function FloatingChatButton() {
 
     const toggleChat = () => setIsOpen(!isOpen);
 
+    const isProductPage = pathname?.includes('/product/');
+
     return (
         <>
             <AnimatePresence>
@@ -58,8 +60,10 @@ export default function FloatingChatButton() {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                        className="fixed z-[60] top-1/2 right-4 md:right-8"
-                        style={{ y: springY }}
+                        className={`fixed z-[60] right-4 md:right-8 ${
+                            isProductPage ? 'bottom-32 md:top-1/2 md:bottom-auto' : 'top-1/2'
+                        }`}
+                        style={{ y: isProductPage ? 0 : springY }}
                     >
                         <motion.button
                             onClick={toggleChat}

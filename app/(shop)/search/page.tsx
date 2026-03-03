@@ -45,7 +45,7 @@ function SearchContent() {
     // Fetch categories for discovery
     fetch('/api/categories')
       .then(res => res.json())
-      .then(data => setCategories(data || []))
+      .then(data => setCategories(data.categories || (Array.isArray(data) ? data : [])))
       .catch(() => { });
 
     // Fetch recommended products for discovery
@@ -166,7 +166,7 @@ function SearchContent() {
               <h3 className="text-lg font-black text-gray-900">Танд санал болгох</h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4 p-2">
               {recommended.map((product, index) => (
                 <DiscoveryProductCard
                   key={product.id}
@@ -256,7 +256,7 @@ function SearchContent() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-2">
             {products.map((product, index) => (
               <DiscoveryProductCard
                 key={product.id}

@@ -45,8 +45,13 @@ export async function PUT(request: Request) {
         }
 
         const ordersCollection = await getCollection('orders');
+        const existingOrder = await ordersCollection.findOne({ _id: new ObjectId(orderId) });
 
-        const updateData: any = {};
+        if (!existingOrder) {
+            return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+        }
+
+        const updateData: any = { updatedAt: new Date() };
         if (status) updateData.status = status;
         if (deliveryEstimate !== undefined) updateData.deliveryEstimate = deliveryEstimate;
 
@@ -55,8 +60,35 @@ export async function PUT(request: Request) {
             { $set: updateData }
         );
 
-        if (result.matchedCount === 0) {
-            return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+        // Send notification to customer (Non-blocking)
+        if (existingOrder.userId && status) {
+            try {
+                let title = '';
+                let message = '';
+                
+                if (status === 'confirmed') {
+                    title = '✅ Захиалга баталгаажлаа!';
+                    message = `Таны захиалга баталгаажлаа. Хүргэлт: ${deliveryEstimate || existingOrder.deliveryEstimate || 'Тодорхойлогдоно'}`;
+                } else if (status === 'delivered') {
+                    title = '🚚 Захиалга хүргэгдлээ!';
+                    message = 'Таны захиалга амжилттай хүргэгдлээ. Баярлалаа!';
+                }
+
+                if (title && message) {
+                    const notificationsCollection = await getCollection('notifications');
+                    await notificationsCollection.insertOne({
+                        userId: existingOrder.userId,
+                        title,
+                        message,
+                        type: 'order',
+                        isRead: false,
+                        link: '/orders',
+                        createdAt: new Date()
+                    });
+                }
+            } catch (notifError) {
+                console.error('Failed to send customer notification:', notifError);
+            }
         }
 
         return NextResponse.json({ success: true });

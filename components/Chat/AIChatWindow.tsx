@@ -17,6 +17,18 @@ interface AIChatWindowProps {
     onBack: () => void;
 }
 
+interface ExtendedMessage {
+    id?: string;
+    role: 'user' | 'assistant' | 'system' | 'data' | 'tool';
+    content: string;
+    experimental_attachments?: Array<{
+        name?: string;
+        contentType?: string;
+        url: string;
+    } | string>;
+    createdAt?: Date;
+}
+
 export default function AIChatWindow({ onBack }: AIChatWindowProps) {
     const router = useRouter();
     const { t } = useTranslation();
@@ -31,11 +43,12 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
 
     const [input, setInput] = useState('');
 
-    const { messages, isLoading, sendMessage } = useChat({
+    const chatOptions: any = {
         api: '/api/chat',
-        onError: (error) => {
+        onError: (error: any) => {
             console.error('Chat error:', error);
-            const msg = typeof error?.message === 'string' ? error.message : '';
+            const msg = typeof error?.message === 'string' ? error.message : JSON.stringify(error);
+            alert(`Google Gemini API Error:\n${msg}`);
             if (msg.includes('429') || msg.toLowerCase().includes('quota')) {
                 toast.error('Систем ачаалалтай байна. Дараа дахин оролдоно уу.');
             } else if (msg.toLowerCase().includes('api key')) {
@@ -43,8 +56,39 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
             } else {
                 toast.error('Алдаа гарлаа. Дахин оролдоно уу.');
             }
+        },
+        onFinish: (message: any) => {
+            console.log('Chat finished:', message);
         }
-    });
+    };
+    const { messages: rawMessages, status, sendMessage, regenerate, stop, error } = useChat(chatOptions);
+
+    // Cast messages to our ExtendedMessage type to avoid TS errors
+    const messages = rawMessages as unknown as ExtendedMessage[];
+
+    const isLoading = status === 'streaming' || status === 'submitted';
+    const append = sendMessage; // Alias for compatibility if needed, or just use sendMessage
+    const reload = regenerate;
+
+    // Check API Key availability in Browser Console as requested
+    useEffect(() => {
+        const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+        if (apiKey) {
+            console.log('%c[DEBUG] Gemini API Key is LOADED:', 'color: green; font-weight: bold;', apiKey);
+            console.log('Key length:', apiKey.length);
+        } else {
+            console.error('%c[DEBUG] Gemini API Key is MISSING in Client Environment!', 'color: red; font-weight: bold;');
+        }
+
+        // Debug useChat return values
+        console.log('useChat debug:', { 
+            status,
+            isLoading: status === 'streaming' || status === 'submitted',
+            hasSendMessage: typeof sendMessage === 'function',
+            hasRegenerate: typeof regenerate === 'function',
+            hasStop: typeof stop === 'function'
+        });
+    }, [status, sendMessage, regenerate, stop]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInput(e.target.value);
@@ -118,20 +162,38 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
     const onFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const safeInput = input || '';
-        if ((!safeInput.trim() && !attachment) || isLoading) return;
+        if ((!safeInput.trim() && !attachment) || isLoading) {
+             return;
+        }
 
-        const currentInput = safeInput;
         const currentAttachment = attachment;
-
+        
         try {
             const contentParts: any[] = [];
-            if (currentInput.trim()) {
-                contentParts.push({ type: 'text', text: currentInput.trim() });
+            if (safeInput.trim()) {
+                contentParts.push({ type: 'text', text: safeInput.trim() });
             }
             if (currentAttachment) {
                 contentParts.push({ type: 'image', image: currentAttachment });
             }
-            await sendMessage({ role: 'user' as const, content: contentParts.length ? contentParts : [{ type: 'text', text: '' }] });
+            
+            // Construct the message object
+            // Use simple string if no attachment, otherwise content parts
+            const content = currentAttachment ? contentParts : safeInput.trim();
+            const messagePayload = { 
+                role: 'user', 
+                content: content 
+            };
+
+            // Use sendMessage
+            if (typeof sendMessage === 'function') {
+                // @ts-ignore
+                await sendMessage(messagePayload);
+            } else {
+                console.error('sendMessage function is missing from useChat');
+                alert('System Error: Chat function "sendMessage" is missing. Please refresh the page.');
+            }
+
             setInput('');
             clearAttachment();
         } catch (e) {
@@ -149,6 +211,8 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
         } else if (content && typeof content === 'object' && typeof (content as any).text === 'string') {
             textContent = (content as any).text;
         }
+        
+        // Remove all ACTION tags and their content for professional UI
         const cleanContent = (textContent || '').replace(/\[ACTION:.*?:END_ACTION\]/g, '');
         
         const regex = /\[(PRODUCT_CARD|ADDRESS_CONFIRMATION):\s*(\{[\s\S]*?\})\]/g;
@@ -162,7 +226,7 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
             }
             
             try {
-                const type = match[1]; // PRODUCT_CARD or ADDRESS_CONFIRMATION
+                const type = match[1];
                 const data = JSON.parse(match[2]);
                 parts.push({ type: type, data: data });
             } catch (e) {
@@ -182,19 +246,33 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
         const addressCards = parts.filter(p => p.type === 'ADDRESS_CONFIRMATION' && p.data);
 
         return (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {textParts.map((part, idx) => (
-              <ReactMarkdown key={`t-${idx}`}>{part.content as string}</ReactMarkdown>
+              <div key={`t-${idx}`} className="prose prose-invert prose-sm max-w-none leading-relaxed break-words">
+                <ReactMarkdown>{part.content as string}</ReactMarkdown>
+              </div>
             ))}
+            
             {productCards.length > 0 && (
-              <div className="flex gap-4 overflow-x-auto py-2 -mx-1 px-1">
-                {productCards.map((part, idx) => (
-                  <div key={`pc-${idx}`} className="shrink-0 min-w-[16rem]">
-                    <ProductCard product={part.data} />
-                  </div>
-                ))}
+              <div className="relative -mx-5 px-5">
+                <div className="flex gap-3 overflow-x-auto pb-4 pt-2 scrollbar-hide snap-x snap-mandatory">
+                  {productCards.map((part, idx) => (
+                    <motion.div 
+                      key={`pc-${idx}`} 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="shrink-0 w-[240px] snap-center"
+                    >
+                      <ProductCard product={part.data} />
+                    </motion.div>
+                  ))}
+                </div>
+                {/* Visual cue for horizontal scroll */}
+                <div className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-slate-800 to-transparent pointer-events-none" />
               </div>
             )}
+            
             {addressCards.map((part, idx) => (
               <AddressConfirmationCard key={`ac-${idx}`} data={part.data} />
             ))}
@@ -208,12 +286,12 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
             <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-slate-800/50 backdrop-blur-md shrink-0 z-10">
                 <button
                     onClick={onBack}
-                    className="p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors"
+                    className="p-2 -ml-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
                 >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-5 h-5" strokeWidth={1.2} />
                 </button>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20 ring-2 ring-white/10">
-                    <Sparkles className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20 ring-2 ring-white/10">
+                    <Sparkles className="w-5 h-5 text-white" strokeWidth={1.2} />
                 </div>
                 <div>
                     <h3 className="font-bold text-white text-lg leading-tight">{t('chat', 'aiAssistant')}</h3>
@@ -238,36 +316,35 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
                     >
                         {/* Avatar */}
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-lg ${msg.role === 'user'
-                                ? 'bg-orange-600 ring-2 ring-orange-500/30'
+                                ? 'bg-[#FF5000] ring-2 ring-orange-500/30'
                                 : 'bg-gradient-to-tr from-blue-600 to-cyan-400 ring-2 ring-blue-500/30'
                             }`}>
-                            {msg.role === 'user' ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-white" />}
+                            {msg.role === 'user' ? <User className="w-4 h-4 text-white" strokeWidth={1.2} /> : <Bot className="w-4 h-4 text-white" strokeWidth={1.2} />}
                         </div>
 
                         {/* Bubble */}
                         <div className={`max-w-[85%] rounded-2xl px-5 py-3 shadow-md ${msg.role === 'user'
-                                ? 'bg-orange-600 text-white rounded-tr-none'
+                                ? 'bg-[#FF5000] text-white rounded-tr-none'
                                 : 'bg-slate-800 text-slate-200 rounded-tl-none border border-white/5'
                             }`}>
                             {msg.experimental_attachments && msg.experimental_attachments.length > 0 && (
                                 <div className="mb-2">
-                                    {msg.experimental_attachments.map((att, i) => {
-                                        // Handle both File objects (if used) and string URLs (data:...)
+                                    {msg.experimental_attachments.map((att: any, i: number) => {
                                         const src = typeof att === 'string' ? att : att.url;
                                         const isVideo = src?.startsWith('data:video') || src?.endsWith('.mp4');
                                         return (
                                             <div key={i}>
                                                 {isVideo ? (
-                                                    <video src={src} controls className="max-w-full rounded-lg max-h-48" />
+                                                    <video src={src} controls className="max-w-full rounded-2xl max-h-48" />
                                                 ) : (
-                                                    <img src={src} alt="User upload" className="max-w-full rounded-lg max-h-48 object-cover" />
+                                                    <img src={src} alt="User upload" className="max-w-full rounded-2xl max-h-48 object-cover shadow-sm" />
                                                 )}
                                             </div>
                                         );
                                     })}
                                 </div>
                             )}
-                            <div className="prose prose-invert prose-sm max-w-none leading-relaxed break-words">
+                            <div className="leading-relaxed">
                                 {renderMessageContent(msg.content)}
                             </div>
                         </div>
@@ -282,13 +359,13 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
                         className="flex gap-3"
                     >
                         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shrink-0 shadow-lg ring-2 ring-blue-500/30">
-                            <Bot className="w-4 h-4 text-white" />
+                            <Bot className="w-4 h-4 text-white" strokeWidth={1.2} />
                         </div>
                         <div className="bg-slate-800 rounded-2xl rounded-tl-none px-4 py-3 border border-white/5 flex items-center gap-1.5 h-[46px]">
                              {/* Lottie-like modern typing indicator */}
-                            <span className="w-2 h-2 bg-gradient-to-tr from-blue-400 to-cyan-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                            <span className="w-2 h-2 bg-gradient-to-tr from-blue-400 to-cyan-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                            <span className="w-2 h-2 bg-gradient-to-tr from-blue-400 to-cyan-400 rounded-full animate-bounce"></span>
+                            <span className="w-1.5 h-1.5 bg-gradient-to-tr from-blue-400 to-cyan-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                            <span className="w-1.5 h-1.5 bg-gradient-to-tr from-blue-400 to-cyan-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                            <span className="w-1.5 h-1.5 bg-gradient-to-tr from-blue-400 to-cyan-400 rounded-full animate-bounce"></span>
                         </div>
                     </motion.div>
                 )}
@@ -323,10 +400,10 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
                     <button 
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-full transition-colors"
+                        className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
                         title="Зураг/Видео оруулах"
                     >
-                        <ImageIcon className="w-5 h-5" />
+                        <ImageIcon className="w-5 h-5" strokeWidth={1.2} />
                     </button>
 
                     <input
@@ -340,9 +417,9 @@ export default function AIChatWindow({ onBack }: AIChatWindowProps) {
                     <button
                         type="submit"
                         disabled={((!input || !input.trim()) && !attachment) || isLoading}
-                        className="p-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-blue-500/25 transition-all active:scale-95 shrink-0"
+                        className="p-3 bg-[#FF5000] text-white rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-orange-500/25 transition-all active:scale-95 shrink-0"
                     >
-                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.2} /> : <Send className="w-4 h-4" strokeWidth={1.2} />}
                     </button>
                 </form>
             </div>

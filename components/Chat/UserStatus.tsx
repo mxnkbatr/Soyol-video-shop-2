@@ -14,10 +14,10 @@ export default function UserStatus({ isAdmin, isInCall, isOnline }: UserStatusPr
         <div className="flex items-center gap-3">
             {/* Admin Badge */}
             {isAdmin && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 backdrop-blur-sm">
-                    <Crown className="w-2.5 h-2.5 text-indigo-400" />
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 backdrop-blur-sm">
+                    <Crown className="w-2.5 h-2.5 text-indigo-400" strokeWidth={1.2} />
                     <span className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.15em]">
-                        Admin
+                        Админ
                     </span>
                 </div>
             )}
@@ -43,7 +43,7 @@ export default function UserStatus({ isAdmin, isInCall, isOnline }: UserStatusPr
                 <span className={`text-[9px] font-black uppercase tracking-[0.1em] ${
                     isInCall ? 'text-red-400' : isOnline ? 'text-emerald-400' : 'text-slate-500'
                 }`}>
-                    {isInCall ? 'Unavailable' : isOnline ? 'Available' : 'Offline'}
+                    {isInCall ? 'Завгүй' : isOnline ? 'Онлайн' : 'Офлайн'}
                 </span>
             </div>
         </div>

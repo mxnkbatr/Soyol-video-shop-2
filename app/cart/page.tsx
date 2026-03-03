@@ -15,50 +15,77 @@ export default function CartPage() {
 
     if (items.length === 0) {
         return (
-            <div className="min-h-screen bg-[#F8F9FA] pt-24 pb-16 flex flex-col items-center justify-center px-4 overflow-hidden relative">
-                {/* Abstract Background Shapes */}
-                <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-orange-100/40 rounded-full blur-[100px] -z-10 animate-pulse" />
-                <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-blue-100/40 rounded-full blur-[100px] -z-10 animate-pulse" />
-
+            <div className="min-h-screen bg-[#FAFAFA] pt-24 pb-16 flex flex-col items-center justify-center px-8 relative overflow-hidden">
                 <motion.div
-                    initial={{ opacity: 0, y: 40 }}
+                    initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: 'spring', damping: 20 }}
-                    className="text-center relative"
+                    transition={{ type: 'spring', damping: 22, stiffness: 100 }}
+                    className="text-center w-full max-w-[320px] flex flex-col items-center"
                 >
-                    <div className="group relative w-48 h-48 mx-auto mb-8">
+                    {/* Illustration Area */}
+                    <motion.div
+                        animate={{ y: [0, -8, 0] }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                        className="relative w-[140px] h-[140px] mb-8 flex items-center justify-center"
+                    >
+                        {/* Soft orange glow background */}
+                        <div className="absolute inset-0 bg-[#FF6B00]/[0.08] lg:bg-[rgba(255,107,0,0.08)] rounded-full -scale-110" />
+
+                        {/* Icon Container */}
+                        <div className="relative z-10 w-full h-full bg-white rounded-full flex flex-col items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.04)] aspect-square border border-orange-50/50">
+                            <ShoppingBag className="w-16 h-16 text-[#FF6B00]" strokeWidth={1.2} />
+                        </div>
+
+                        {/* Floating Small Elements */}
                         <motion.div
-                            animate={{
-                                rotate: [0, 5, -5, 0],
-                                y: [0, -10, 0]
-                            }}
-                            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                            className="w-full h-full bg-white rounded-[60px] shadow-[0_20px_50px_rgba(0,0,0,0.08)] flex items-center justify-center border border-white relative z-10"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                            className="absolute inset-[-20%] pointer-events-none"
                         >
-                            <ShoppingBag className="w-24 h-24 text-slate-100 group-hover:text-orange-100 transition-colors duration-500" strokeWidth={0.5} />
-                            <motion.div
-                                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-                                transition={{ duration: 3, repeat: Infinity }}
-                                className="absolute w-12 h-12 bg-orange-500/20 rounded-full blur-xl"
-                            />
+                            <div className="absolute top-[15%] left-[10%] w-2 h-2 rounded-full bg-orange-200" />
+                            <div className="absolute top-[20%] right-[10%] w-3 h-3 rounded-full bg-yellow-200" />
+                            <div className="absolute bottom-[10%] left-[20%] w-2 h-2 rounded-full bg-orange-300" />
+                            <div className="absolute bottom-[20%] right-[15%] w-2.5 h-2.5 rounded-full bg-red-200" />
                         </motion.div>
-                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-32 h-4 bg-slate-900/5 blur-xl rounded-full" />
+                    </motion.div>
+
+                    {/* Text Content */}
+                    <div className="flex flex-col gap-3 mb-10 w-full">
+                        <h2 className="text-[22px] font-bold text-[#1A1A1A] leading-tight flex flex-col">
+                            Таны сагс хоосон байна
+                        </h2>
+                        <p className="text-[14px] text-[#999999] font-normal text-center leading-relaxed">
+                            Сонирхсон бараагаа сагсандаа нэмж эхлээрэй
+                        </p>
                     </div>
 
-                    <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tighter">Таны сагс хоосон байна</h2>
-                    <p className="text-slate-400 text-sm mb-12 uppercase tracking-[0.2em] font-black max-w-xs mx-auto leading-loose">
-                        Та сонирхсон бараагаа сагсандаа нэмж эхлээрэй
-                    </p>
-
-                    <Link href="/">
+                    {/* CTA Button */}
+                    <Link href="/" className="w-full mb-12 block">
                         <motion.button
-                            whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(255,80,0,0.3)" }}
-                            whileTap={{ scale: 0.95 }}
-                            className="px-12 py-5 bg-gradient-to-r from-[#FF7900] to-[#FF5000] text-white rounded-[24px] font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-orange-500/40 transition-all"
+                            whileTap={{ scale: 0.97 }}
+                            className="w-full h-[54px] bg-gradient-to-br from-[#FF6B00] to-[#FF8C00] text-white rounded-[14px] font-bold text-[16px] shadow-[0_8px_20px_rgba(255,107,0,0.3)] flex items-center justify-center gap-2 group transition-shadow hover:shadow-[0_12px_24px_rgba(255,107,0,0.4)]"
                         >
                             Дэлгүүр хэсэх
+                            <ArrowLeft className="w-5 h-5 rotate-180 group-hover:translate-x-1 transition-transform" />
                         </motion.button>
                     </Link>
+
+                    {/* Optional: Suggested Products Section */}
+                    <div className="w-[100vw] px-4 overflow-x-hidden md:w-full md:px-0">
+                        <div className="flex items-center justify-between mb-4 w-full">
+                            <h3 className="text-sm font-bold text-gray-800">Танд санал болгох</h3>
+                        </div>
+                        <div className="flex overflow-x-auto gap-3 pb-6 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                            {/* Dummy Product Cards */}
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="min-w-[140px] w-[140px] snap-start bg-white rounded-2xl p-3 border border-gray-100 shadow-sm flex flex-col gap-2">
+                                    <div className="w-full aspect-[4/5] bg-gray-50 rounded-xl relative overflow-hidden mb-1" />
+                                    <div className="h-3 w-3/4 bg-gray-100 rounded-full" />
+                                    <div className="h-4 w-1/2 bg-gray-200 rounded-full" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </motion.div>
             </div>
         );

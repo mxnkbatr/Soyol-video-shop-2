@@ -61,6 +61,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                         ? 'text-yellow-400 fill-yellow-400'
                                         : 'text-slate-200 fill-slate-200'
                                 }`}
+                                strokeWidth={1.2}
                             />
                         ))}
                         <span className="text-xs text-slate-400 ml-1">
@@ -73,9 +74,9 @@ export default function ProductCard({ product }: ProductCardProps) {
                         </span>
                         <button
                             onClick={handleAddToCart}
-                            className="p-1.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+                            className="p-2 bg-[#FF5000] text-white rounded-xl hover:bg-[#E64500] transition-colors shadow-sm"
                         >
-                            <ShoppingCart className="w-3.5 h-3.5" />
+                            <ShoppingCart className="w-4 h-4" strokeWidth={1.2} />
                         </button>
                     </div>
                 </div>
