@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { 
-    ArrowLeft, LayoutDashboard, Loader2, Menu, X, BarChart3, 
-    Package, ShoppingCart, MessageCircle, Tag, Layers, 
+import {
+    ArrowLeft, LayoutDashboard, Loader2, Menu, X, BarChart3,
+    Package, ShoppingCart, MessageCircle, Tag, Layers,
     Video, Phone, Clock, Wifi, AlertCircle
 } from 'lucide-react';
 import UserList from '@/components/Chat/UserList';
@@ -48,14 +48,7 @@ export default function AdminMessagesPage() {
             try {
                 const res = await fetch('/api/users');
                 const data = await res.json();
-                // Add some mock data for demonstration of unread counts and previews if needed
-                // In a real app, this would come from the API
-                setUsers(data.map((u: any) => ({
-                    ...u,
-                    isOnline: Math.random() > 0.3, // Mock online status
-                    lastMessage: u.role === 'admin' ? '' : 'Захиалгын талаар тодруулах зүйл байна...',
-                    unreadCount: u.role === 'admin' ? 0 : Math.floor(Math.random() * 3)
-                })));
+                setUsers(data);
                 setLoading(false);
             } catch (err) {
                 console.error('Failed to fetch users', err);
@@ -230,7 +223,7 @@ export default function AdminMessagesPage() {
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 {/* Call Status Indicator (Desktop Header) */}
                                 {isCallActive && (
                                     <div className="hidden md:flex items-center gap-4 bg-emerald-500/10 px-4 py-2 rounded-2xl border border-emerald-500/20">
@@ -264,11 +257,10 @@ export default function AdminMessagesPage() {
                                         <button
                                             key={f}
                                             onClick={() => setViewFilter(f)}
-                                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${
-                                                viewFilter === f 
-                                                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' 
-                                                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                                            }`}
+                                            className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${viewFilter === f
+                                                    ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                                                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                                                }`}
                                         >
                                             {f === 'all' ? 'Бүгд' : f === 'clients' ? 'Хэрэглэгч' : 'Админ'}
                                         </button>
@@ -307,7 +299,7 @@ export default function AdminMessagesPage() {
                                                 <div className="bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 font-mono text-sm font-bold">
                                                     {formatDuration(callDuration)}
                                                 </div>
-                                                <button 
+                                                <button
                                                     onClick={onDisconnected}
                                                     className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-xl text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-red-500/20 transition-all active:scale-95"
                                                 >
@@ -342,7 +334,7 @@ export default function AdminMessagesPage() {
                                             />
                                         ) : (
                                             <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8 text-center">
-                                                <motion.div 
+                                                <motion.div
                                                     initial={{ opacity: 0, scale: 0.9 }}
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center mb-6 relative"

@@ -16,28 +16,32 @@ export async function GET(req: Request) {
     }
 
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    
+
     if (!payload.userId) {
-        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     const usersCollection = await getCollection('users');
-    const user = await usersCollection.findOne({ _id: new ObjectId(payload.userId as string) });
+    const user = await usersCollection.findOneAndUpdate(
+      { _id: new ObjectId(payload.userId as string) },
+      { $set: { lastSeen: new Date() } },
+      { returnDocument: 'after' }
+    );
 
     if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ 
-        user: {
-            id: user._id.toString(),
-            phone: user.phone,
-            role: user.role,
-            status: user.status,
-            name: user.name,
-            image: user.image,
-            email: user.email
-        } 
+    return NextResponse.json({
+      user: {
+        id: user._id.toString(),
+        phone: user.phone,
+        role: user.role,
+        status: user.status,
+        name: user.name,
+        image: user.image,
+        email: user.email
+      }
     });
 
   } catch (error) {

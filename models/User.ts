@@ -23,6 +23,7 @@ export interface User {
     email?: string;
     image?: string;
     addresses?: Address[];
+    lastSeen?: Date;
     createdAt: Date;
     updatedAt: Date;
 }

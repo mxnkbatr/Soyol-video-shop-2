@@ -48,14 +48,10 @@ type Order = {
   createdAt: string;
 };
 
-const CATEGORIES = [
-  { value: 'tech', label: 'Tech & Electronics' },
-  { value: 'fashion', label: 'Fashion & Apparel' },
-  { value: 'home', label: 'Home & Living' },
-  { value: 'gaming', label: 'Gaming' },
-  { value: 'beauty', label: 'Beauty & Personal Care' },
-  { value: 'sports', label: 'Sports & Outdoors' },
-];
+type Category = {
+  id: string;
+  name: string;
+};
 
 const SECTIONS = [
   { id: 'Шинэ', label: 'Шинэ', icon: '🔥' },
@@ -67,6 +63,7 @@ const SECTIONS = [
 export default function AdminDashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [attributes, setAttributes] = useState<Attribute[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
@@ -78,7 +75,7 @@ export default function AdminDashboard() {
     discountPercent: '',
     sections: [] as string[],
     image: '',
-    category: 'tech',
+    category: '', // Starts empty
     stockStatus: 'in-stock',
     inventory: '0',
     brand: '',
@@ -130,6 +127,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      if (res.ok) {
+        const data = await res.json();
+        const fetchedCats = data.categories || [];
+        setCategories(fetchedCats);
+        // Default category for new products
+        if (!formData.category && fetchedCats.length > 0) {
+          setFormData(prev => ({ ...prev, category: fetchedCats[0].id }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
   const fetchOrders = async () => {
     try {
       const res = await fetch('/api/admin/orders');
@@ -145,7 +159,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      await Promise.all([fetchProducts(), fetchAttributes(), fetchOrders()]);
+      await Promise.all([fetchProducts(), fetchAttributes(), fetchOrders(), fetchCategories()]);
       setLoading(false);
     })();
   }, []);
@@ -209,7 +223,7 @@ export default function AdminDashboard() {
         discountPercent: '',
         sections: [],
         image: '',
-        category: 'tech',
+        category: categories.length > 0 ? categories[0].id : '',
         stockStatus: 'in-stock',
         inventory: '0',
         brand: '',
@@ -233,7 +247,7 @@ export default function AdminDashboard() {
       discountPercent: '',
       sections: [],
       image: '',
-      category: 'tech',
+      category: categories.length > 0 ? categories[0].id : '',
       stockStatus: 'in-stock',
       inventory: '0',
       brand: '',
@@ -537,13 +551,13 @@ export default function AdminDashboard() {
                   >
                     Бүгд
                   </button>
-                  {CATEGORIES.map(cat => (
+                  {categories.map(cat => (
                     <button
-                      key={cat.value}
-                      onClick={() => setFilterCategory(cat.value)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterCategory === cat.value ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                      key={cat.id}
+                      onClick={() => setFilterCategory(cat.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterCategory === cat.id ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
                     >
-                      {cat.label}
+                      {cat.name}
                     </button>
                   ))}
                 </div>
@@ -580,7 +594,7 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="text-sm font-medium text-white line-clamp-1">{p.name}</div>
-                              <div className="text-xs text-slate-500">{CATEGORIES.find(c => c.value === p.category)?.label || p.category}</div>
+                              <div className="text-xs text-slate-500">{categories.find(c => c.id === p.category)?.name || p.category}</div>
                             </td>
                             <td className="px-6 py-4">
                               <span className="text-amber-400 font-medium text-sm">{formatPrice(p.price)}</span>
@@ -687,7 +701,7 @@ export default function AdminDashboard() {
                                 </button>
                               </div>
                             </div>
-                            <p className="text-xs text-slate-500 mb-2">{CATEGORIES.find(c => c.value === p.category)?.label || p.category}</p>
+                            <p className="text-xs text-slate-500 mb-2">{categories.find(c => c.id === p.category)?.name || p.category}</p>
                             <div className="flex items-center justify-between">
                               <span className="text-amber-400 font-bold text-sm">{formatPrice(p.price)}</span>
                               <div className="flex items-center gap-2">
@@ -867,7 +881,7 @@ export default function AdminDashboard() {
                   <div>
                     <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Төрөл</label>
                     <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none appearance-none cursor-pointer">
-                      {CATEGORIES.map((c) => (<option key={c.value} value={c.value}>{c.label}</option>))}
+                      {categories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
                     </select>
                   </div>
 
