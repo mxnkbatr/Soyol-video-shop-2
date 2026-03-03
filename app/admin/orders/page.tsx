@@ -1,4 +1,4 @@
-'use client';
+'use client'; // Force redeploy v2
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
@@ -261,8 +261,8 @@ export default function AdminOrdersPage() {
                                         key={status}
                                         onClick={() => setActiveTab(status)}
                                         className={`px-3 md:px-4 py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === status
-                                                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                                                : 'text-slate-400 hover:text-white'
+                                            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                                            : 'text-slate-400 hover:text-white'
                                             }`}
                                     >
                                         {getStatusLabel(status)}
