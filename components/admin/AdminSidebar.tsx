@@ -11,6 +11,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import useSWR from 'swr';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
@@ -95,7 +96,13 @@ export default function AdminSidebar() {
                                 }`}
                         >
                             <div className="flex items-center gap-3">
-                                <Icon className="w-5 h-5 shrink-0" />
+                                {label === 'Мессеж & Дуудлага' ? (
+                                    <div className="w-5 h-5 relative shrink-0">
+                                        <Image src="/images/support-icon.png" alt="" fill className="object-contain" />
+                                    </div>
+                                ) : (
+                                    <Icon className="w-5 h-5 shrink-0" />
+                                )}
                                 <span className="text-sm font-bold">{label}</span>
                             </div>
                             <div className="flex items-center gap-2">

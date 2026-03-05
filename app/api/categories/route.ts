@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
 import { auth } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export const revalidate = 300;
 
 export async function GET() {

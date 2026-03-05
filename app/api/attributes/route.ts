@@ -4,6 +4,8 @@ import { getCollection } from '@/lib/mongodb';
 import { auth } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const attributesCollection = await getCollection('attributes');
@@ -31,11 +33,11 @@ export async function POST(req: Request) {
     }
 
     const attributesCollection = await getCollection('attributes');
-    
+
     // Check if attribute already exists
     const existing = await attributesCollection.findOne({ name });
     if (existing) {
-        return NextResponse.json({ error: 'Attribute already exists' }, { status: 400 });
+      return NextResponse.json({ error: 'Attribute already exists' }, { status: 400 });
     }
 
     const newAttribute = {
@@ -56,60 +58,60 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
-    try {
-        const { userId } = await auth();
-        // Verify admin
-        if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const { userId } = await auth();
+    // Verify admin
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const body = await req.json();
-        const { id, name, type, options } = body;
+    const body = await req.json();
+    const { id, name, type, options } = body;
 
-        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-        const attributesCollection = await getCollection('attributes');
-        
-        await attributesCollection.updateOne(
-            { _id: new ObjectId(id) },
-            { 
-                $set: { 
-                    name, 
-                    type, 
-                    options, 
-                    updatedAt: new Date() 
-                } 
-            }
-        );
+    const attributesCollection = await getCollection('attributes');
 
-        // IMMEDIATE UPDATE: If name changed, we might need to update products, 
-        // but since we will likely store attribute ID in products, the name change 
-        // will propagate automatically on fetch if we join.
-        // However, if products store the name snapshots, we would need to update them here.
-        // For this implementation, let's assume products will store { attributeId: ObjectId, value: any }.
-        
-        return NextResponse.json({ success: true });
+    await attributesCollection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          name,
+          type,
+          options,
+          updatedAt: new Date()
+        }
+      }
+    );
 
-    } catch (error) {
-        console.error('Error updating attribute:', error);
-        return NextResponse.json({ error: 'Failed to update attribute' }, { status: 500 });
-    }
+    // IMMEDIATE UPDATE: If name changed, we might need to update products, 
+    // but since we will likely store attribute ID in products, the name change 
+    // will propagate automatically on fetch if we join.
+    // However, if products store the name snapshots, we would need to update them here.
+    // For this implementation, let's assume products will store { attributeId: ObjectId, value: any }.
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('Error updating attribute:', error);
+    return NextResponse.json({ error: 'Failed to update attribute' }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: Request) {
-    try {
-        const { userId } = await auth();
-        if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const { searchParams } = new URL(req.url);
-        const id = searchParams.get('id');
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
 
-        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
 
-        const attributesCollection = await getCollection('attributes');
-        await attributesCollection.deleteOne({ _id: new ObjectId(id) });
+    const attributesCollection = await getCollection('attributes');
+    await attributesCollection.deleteOne({ _id: new ObjectId(id) });
 
-        return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error('Error deleting attribute:', error);
-        return NextResponse.json({ error: 'Failed to delete attribute' }, { status: 500 });
-    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting attribute:', error);
+    return NextResponse.json({ error: 'Failed to delete attribute' }, { status: 500 });
+  }
 }

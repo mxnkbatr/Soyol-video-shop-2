@@ -5,6 +5,7 @@ import { MessageCircle, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import ChatWidget from './ChatWidget';
+import Image from 'next/image';
 
 export default function FloatingChatButton() {
     const pathname = usePathname();
@@ -60,9 +61,8 @@ export default function FloatingChatButton() {
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                        className={`fixed z-[60] right-4 md:right-8 ${
-                            isProductPage ? 'bottom-32 md:top-1/2 md:bottom-auto' : 'top-1/2'
-                        }`}
+                        className={`fixed z-[60] right-4 md:right-8 ${isProductPage ? 'bottom-32 md:top-1/2 md:bottom-auto' : 'top-1/2'
+                            }`}
                         style={{ y: isProductPage ? 0 : springY }}
                     >
                         <motion.button
@@ -91,8 +91,9 @@ export default function FloatingChatButton() {
                                         animate={{ rotate: 0, opacity: 1 }}
                                         exit={{ rotate: -90, opacity: 0 }}
                                         transition={{ duration: 0.2 }}
+                                        className="w-8 h-8 relative"
                                     >
-                                        <MessageCircle className="w-7 h-7" />
+                                        <Image src="/images/support-icon.png" alt="" fill className="object-contain brightness-0 invert" />
                                     </motion.div>
                                 )}
                             </AnimatePresence>
