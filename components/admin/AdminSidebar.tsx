@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-    BarChart3, Package, Tag, Layers, ShoppingCart, MessageCircle,
+    BarChart3, Package, Layers, ShoppingCart, MessageCircle,
     ArrowLeft, Menu, X, Building2, LogOut
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -41,7 +41,6 @@ export default function AdminSidebar() {
         { href: '/admin/products', icon: Package, label: 'Бүтээгдэхүүн', shortcut: 'G + P' },
         { href: '/admin/orders', icon: ShoppingCart, label: 'Захиалгууд', badge: pendingCount, badgeColor: 'bg-red-500', shortcut: 'G + O' },
         { href: '/admin/categories', icon: Layers, label: 'Ангилал', shortcut: null },
-        { href: '/admin/attributes', icon: Tag, label: 'Шинж чанар', shortcut: null },
         { href: '/admin/messages', icon: MessageCircle, label: 'Мессеж & Дуудлага', badge: unreadMessagesCount, badgeColor: 'bg-blue-500', shortcut: 'G + M' },
     ];
 

@@ -38,8 +38,38 @@ export async function GET(req: Request) {
             }
         }).toArray();
 
+        // Find guests who have chatted with the admin
+        let guestUsers: any[] = [];
+        if (!role && adminId) {
+            const adminMessages = await messagesCollection.find({
+                $or: [{ receiverId: adminId }, { senderId: adminId }]
+            }).toArray();
+
+            const knownUserIds = new Set(users.map(u => u._id.toString()));
+            knownUserIds.add(adminId);
+            const guestMap = new Map();
+
+            adminMessages.forEach(msg => {
+                const otherId = msg.senderId === adminId ? msg.receiverId : msg.senderId;
+                if (otherId && !knownUserIds.has(otherId) && String(otherId).startsWith('guest-')) {
+                    if (!guestMap.has(otherId)) {
+                        guestMap.set(otherId, {
+                            _id: otherId,
+                            userId: otherId,
+                            name: `Зочин ${otherId.substring(6, 10)}`,
+                            role: 'guest',
+                            isOnline: true,
+                        });
+                    }
+                }
+            });
+            guestUsers = Array.from(guestMap.values());
+        }
+
+        const allUsers = [...users, ...guestUsers];
+
         // Enhance users with real-time messaging data
-        const enhancedUsers = await Promise.all(users.map(async (user) => {
+        const enhancedUsers = await Promise.all(allUsers.map(async (user) => {
             const userIdStr = user._id.toString();
 
             // 1. Calculate isOnline (within last 5 minutes)

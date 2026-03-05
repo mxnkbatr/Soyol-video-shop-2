@@ -27,13 +27,12 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
     const { user } = useUser();
     const { t } = useTranslation();
 
-    // Generate a stable guest ID for unauthenticated users so chat messages have a sender
     const [guestId] = useState(() => {
         if (typeof window === 'undefined') return 'guest';
-        let id = sessionStorage.getItem('soyol-guest-id');
+        let id = localStorage.getItem('soyol-guest-id');
         if (!id) {
             id = `guest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-            sessionStorage.setItem('soyol-guest-id', id);
+            localStorage.setItem('soyol-guest-id', id);
         }
         return id;
     });

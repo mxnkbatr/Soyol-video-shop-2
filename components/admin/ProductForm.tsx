@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Save, ArrowLeft, Image as ImageIcon, Box, Tag, FileText, CheckCircle2, Star } from 'lucide-react';
+import { Loader2, Save, ArrowLeft, Image as ImageIcon, Box, FileText, CheckCircle2, Star } from 'lucide-react';
 import MultiImageUpload from '@/components/admin/MultiImageUpload';
 import useSWR from 'swr';
 import toast from 'react-hot-toast';
@@ -25,10 +25,8 @@ const SECTIONS = [
 export default function ProductForm({ initialData, onSubmit, isSubmitting }: ProductFormProps) {
     const router = useRouter();
     const { data: categoriesData } = useSWR('/api/categories', fetcher);
-    const { data: attributesData } = useSWR('/api/attributes', fetcher);
 
     const categories = categoriesData?.categories || [];
-    const _attributes = attributesData || [];
 
     const [activeTab, setActiveTab] = useState('basic');
 
@@ -47,7 +45,6 @@ export default function ProductForm({ initialData, onSubmit, isSubmitting }: Pro
         model: initialData?.model || '',
         delivery: initialData?.delivery || 'Үнэгүй',
         paymentMethods: initialData?.paymentMethods || 'QPay, SocialPay, Card',
-        attributes: initialData?.attributes || {},
         featured: initialData?.featured || false
     });
 
@@ -79,16 +76,6 @@ export default function ProductForm({ initialData, onSubmit, isSubmitting }: Pro
         }));
     };
 
-    const handleAttributeChange = (attrName: string, value: string) => {
-        setFormData(prev => ({
-            ...prev,
-            attributes: {
-                ...prev.attributes,
-                [attrName]: value
-            }
-        }));
-    };
-
     const toggleSection = (sectionId: string) => {
         const sections = formData.sections.includes(sectionId)
             ? formData.sections.filter((s: string) => s !== sectionId)
@@ -116,7 +103,6 @@ export default function ProductForm({ initialData, onSubmit, isSubmitting }: Pro
         { id: 'basic', label: 'Ерөнхий', icon: FileText },
         { id: 'media', label: 'Зураг', icon: ImageIcon },
         { id: 'pricing', label: 'Үнэ & Үлдэгдэл', icon: Box },
-        { id: 'attributes', label: 'Шинж чанар', icon: Tag },
     ];
 
     return (
@@ -307,45 +293,7 @@ export default function ProductForm({ initialData, onSubmit, isSubmitting }: Pro
                         </div>
                     )}
 
-                    {/* Attributes Tab */}
-                    {activeTab === 'attributes' && (
-                        <div className="space-y-6 animate-in fade-in duration-300">
-                            {_attributes.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    {_attributes.map((attr: any) => (
-                                        <div key={attr._id}>
-                                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">{attr.name}</label>
-                                            {attr.type === 'select' ? (
-                                                <select
-                                                    value={formData.attributes[attr.name] || ''}
-                                                    onChange={(e) => handleAttributeChange(attr.name, e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-amber-500/50 appearance-none text-sm"
-                                                >
-                                                    <option value="">Сонгох...</option>
-                                                    {attr.options?.map((opt: string) => (
-                                                        <option key={opt} value={opt}>{opt}</option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <input
-                                                    type={attr.type === 'number' ? 'number' : 'text'}
-                                                    value={formData.attributes[attr.name] || ''}
-                                                    onChange={(e) => handleAttributeChange(attr.name, e.target.value)}
-                                                    className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-amber-500/50 text-sm"
-                                                    placeholder={`${attr.name} оруулах...`}
-                                                />
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-10">
-                                    <Tag className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-                                    <p className="text-slate-400">Тохируулсан шинж чанар байхгүй байна.</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
+
                 </div>
             </div>
 

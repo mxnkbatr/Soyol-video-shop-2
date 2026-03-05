@@ -488,3 +488,11 @@
     "content": "hi"
   }
 ]
+
+--- Request 2026-03-05T13:13:30.404Z ---
+[
+  {
+    "role": "user",
+    "content": "hi"
+  }
+]
