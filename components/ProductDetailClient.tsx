@@ -25,7 +25,10 @@ export type ProductDetailData = {
   description: string | null;
   price: number;
   originalPrice?: number;
+  discount?: number;
+  discountPercent?: number;
   image: string | null;
+  images?: string[];
   category: string;
   stockStatus: string;
   inventory?: number;
@@ -37,6 +40,8 @@ export type ProductDetailData = {
   updatedAt?: string;
   rating?: number;
   wholesale?: boolean;
+  sections?: string[];
+  featured?: boolean;
   relatedProducts?: Product[];
 };
 

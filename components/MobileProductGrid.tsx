@@ -1,10 +1,10 @@
 'use client';
 
-import { type ApiProduct } from '@/lib/hooks/useProducts';
+import { type Product } from '@/models/Product';
 import MobileProductCard from './MobileProductCard';
 
 interface MobileProductGridProps {
-    products: ApiProduct[];
+    products: Product[];
 }
 
 export default function MobileProductGrid({ products }: MobileProductGridProps) {

@@ -4,12 +4,12 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Star, ShoppingCart } from 'lucide-react';
-import { type ApiProduct } from '@/lib/hooks/useProducts';
+import { type Product } from '@/models/Product';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatCurrency } from '@/lib/utils';
 
 interface MobileProductCardProps {
-    product: ApiProduct;
+    product: Product;
 }
 
 export default function MobileProductCard({ product }: MobileProductCardProps) {

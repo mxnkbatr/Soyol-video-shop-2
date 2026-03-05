@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { invoiceId: string } }
+    { params }: { params: Promise<{ invoiceId: string }> }
 ) {
     try {
         const { invoiceId } = await params;

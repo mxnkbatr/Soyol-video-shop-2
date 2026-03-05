@@ -4,9 +4,11 @@ export interface Product {
   id: string;
   name: string;
   image?: string | null;
+  images?: string[];
   price: number; // Final price after discount
   originalPrice?: number; // Base price before discount
   discountPercent?: number; // 0-100
+  discount?: number;
   description?: string;
   rating?: number;
   category: string;
@@ -16,4 +18,6 @@ export interface Product {
   inventory?: number;
   sections?: string[]; // ['Шинэ', 'Бэлэн', etc.]
   attributes?: Record<string, string>;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
 }
