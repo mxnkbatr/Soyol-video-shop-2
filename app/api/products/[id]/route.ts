@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-
+import { auth } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
@@ -50,6 +49,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { userId, role } = await auth();
+    if (!userId || role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { id } = await params;
     if (!id) {
       return NextResponse.json({ error: 'Product ID required' }, { status: 400 });

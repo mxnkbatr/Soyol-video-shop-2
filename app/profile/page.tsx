@@ -9,7 +9,6 @@ import {
   Package,
   Heart,
   MapPin,
-  Settings,
   Bell,
   ShieldCheck,
   HelpCircle,
@@ -151,11 +150,6 @@ export default function ProfilePage() {
         <div>
           <h2 className="text-[11px] font-bold text-[#999999] uppercase tracking-wider ml-4 mb-2">Тохиргоо</h2>
           <div className="bg-white rounded-[14px] shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
-            <MenuItem
-              icon={Settings} iconBg="#F5F5F5" iconColor="#6B7280"
-              label="Тохиргоо" href="/settings"
-            />
-            <MenuDivider />
             <MenuItem
               icon={Bell} iconBg="#F0F5FF" iconColor="#3B82F6"
               label="Мэдэгдэл" href="/settings/notifications"

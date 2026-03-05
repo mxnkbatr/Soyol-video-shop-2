@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
+import { auth } from '@/lib/auth';
 
 export const revalidate = 300;
 
@@ -18,7 +19,7 @@ export async function GET() {
           from: 'products',
           // Assuming 'id' field in categories matches 'category' field in products
           // We use 'id' because that's what we use in our mock data and frontend
-          localField: 'id', 
+          localField: 'id',
           foreignField: 'category',
           as: 'categoryProducts'
         }
@@ -101,6 +102,11 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const { userId, role } = await auth();
+    if (!userId || role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { name, icon, subcategories } = body;
 
@@ -109,7 +115,7 @@ export async function POST(req: Request) {
     }
 
     const categoriesCollection = await getCollection('categories');
-    
+
     // Generate simple slug/id from name if not provided
     // This is a simple implementation; robust one would handle duplicates
     const id = body.id || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');

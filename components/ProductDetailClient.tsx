@@ -470,8 +470,8 @@ function ProductInfoTabs({ product }: { product: any }) {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-5 py-3 text-sm font-bold relative transition-colors ${activeTab === tab.id
-                ? 'text-[#FF5000]'
-                : 'text-gray-400 hover:text-gray-700'
+              ? 'text-[#FF5000]'
+              : 'text-gray-400 hover:text-gray-700'
               }`}
           >
             {tab.label}

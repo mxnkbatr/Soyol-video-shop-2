@@ -3,6 +3,7 @@
 import { getCollection } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { revalidatePath } from 'next/cache';
+import { auth } from '@/lib/auth';
 
 export type ProductFormData = {
   name: string;
@@ -12,6 +13,7 @@ export type ProductFormData = {
   discountPercent?: number;
   sections?: string[];
   image: string;
+  images?: string[];
   category: string;
   stockStatus: string;
   inventory: number;
@@ -25,6 +27,11 @@ export type ProductFormData = {
 
 export async function createProduct(data: ProductFormData) {
   try {
+    const { userId, role } = await auth();
+    if (!userId || role !== 'admin') {
+      return { success: false, error: 'Зөвшөөрөлгүй' };
+    }
+
     const products = await getCollection('products');
     const result = await products.insertOne({
       ...data,
@@ -47,6 +54,11 @@ export async function createProduct(data: ProductFormData) {
 
 export async function deleteProduct(productId: string) {
   try {
+    const { userId, role } = await auth();
+    if (!userId || role !== 'admin') {
+      return { success: false, error: 'Зөвшөөрөлгүй' };
+    }
+
     const products = await getCollection('products');
     await products.deleteOne({ _id: new ObjectId(productId) });
 
@@ -75,6 +87,11 @@ export async function getAllProducts() {
 
 export async function updateProduct(productId: string, data: Partial<ProductFormData>) {
   try {
+    const { userId, role } = await auth();
+    if (!userId || role !== 'admin') {
+      return { success: false, error: 'Зөвшөөрөлгүй' };
+    }
+
     const products = await getCollection('products');
 
     // Sanitize inventory if it exists in the update

@@ -94,16 +94,7 @@ function SearchContent() {
     { text: 'Winter Sale', status: 'HOT' },
   ];
 
-  const discoveryCategories = [
-    { name: 'Phones', icon: Phone },
-    { name: 'Laptops', icon: Laptop },
-    { name: 'Watches', icon: Watch },
-    { name: 'Audio', icon: Headphones },
-    { name: 'Gaming', icon: Gamepad },
-    { name: 'Health', icon: Heart },
-    { name: 'Gifts', icon: Gift },
-    { name: 'More', icon: MoreHorizontal },
-  ];
+  // The unused legacy static categories list has been removed
 
   if (!q.trim()) {
     return (
@@ -137,26 +128,40 @@ function SearchContent() {
         {/* Discovery Sections */}
         <div className="px-4 mt-8 space-y-10">
 
-          {/* Quick Categories Grid */}
+          {/* Dynamic Categories Grid from Database */}
           <section>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-black text-gray-900">{t('nav', 'allCategories')}</h3>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </div>
-            <div className="grid grid-cols-4 gap-y-8 gap-x-4">
-              {discoveryCategories.map((cat, idx) => (
-                <motion.div
-                  key={idx}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex flex-col items-center gap-3"
-                >
-                  <div className="w-16 h-16 rounded-[20px] bg-white border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex items-center justify-center text-gray-800 transition-all duration-300 hover:shadow-md hover:border-gray-200 hover:-translate-y-1">
-                    <cat.icon strokeWidth={1.5} className="w-7 h-7" />
+            {categories.length > 0 ? (
+              <div className="grid grid-cols-4 gap-y-8 gap-x-4">
+                {categories.map((cat, idx) => (
+                  <Link key={cat.id || idx} href={`/?category=${cat.id || cat._id}`}>
+                    <motion.div
+                      whileTap={{ scale: 0.95 }}
+                      className="flex flex-col items-center gap-3 cursor-pointer"
+                    >
+                      <div className="w-16 h-16 rounded-[20px] bg-white border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex items-center justify-center text-gray-800 transition-all duration-300 hover:shadow-md hover:border-gray-200 hover:-translate-y-1">
+                        <span className="text-2xl">{cat.icon || '📦'}</span>
+                      </div>
+                      <span className="text-[11px] font-normal text-gray-600 tracking-wide text-center leading-tight max-w-full truncate px-1">
+                        {cat.name}
+                      </span>
+                    </motion.div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 gap-y-8 gap-x-4">
+                {Array(8).fill(0).map((_, i) => (
+                  <div key={i} className="flex flex-col items-center gap-3">
+                    <div className="w-16 h-16 rounded-[20px] bg-gray-100 animate-pulse border border-gray-50" />
+                    <div className="w-12 h-2 bg-gray-100 animate-pulse rounded-full mt-1" />
                   </div>
-                  <span className="text-[11px] font-normal text-gray-600 tracking-wide text-center leading-tight">{cat.name}</span>
-                </motion.div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Recommended Section (Temu Style Masonry) */}

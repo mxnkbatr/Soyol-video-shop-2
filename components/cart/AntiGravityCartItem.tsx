@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import Image from 'next/image';
 import { Trash2, Minus, Plus, Check } from 'lucide-react';
 import { useCartStore, type CartItem } from '@/store/cartStore';
@@ -15,28 +15,47 @@ export default function AntiGravityCartItem({ item }: AntiGravityCartItemProps) 
     const removeItem = useCartStore((state) => state.removeItem);
     const updateQuantity = useCartStore((state) => state.updateQuantity);
     const toggleItemSelection = useCartStore((state) => state.toggleItemSelection);
+
     const [deliveryEstimate, setDeliveryEstimate] = React.useState<string | null>(null);
+    const [removing, setRemoving] = useState(false);
+    const [imgError, setImgError] = useState(false);
 
     React.useEffect(() => {
         if (item.stockStatus === 'pre-order') {
-            fetch('/api/delivery', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productName: item.name, stockStatus: item.stockStatus }),
-            })
-                .then(res => res.json())
-                .then(data => setDeliveryEstimate(data.estimation))
-                .catch(() => setDeliveryEstimate('7-14 хоногт ирнэ'));
+            // Static estimate — API дуудахгүй
+            const today = new Date();
+            const arrival = new Date(today.setDate(today.getDate() + 14));
+            const month = arrival.toLocaleString('mn-MN', { month: 'long' });
+            const day = arrival.getDate();
+            setDeliveryEstimate(`${month}ын ${day}-нд ирэх төлөвтэй`);
         }
-    }, [item.id, item.stockStatus, item.name]);
+    }, [item.id, item.stockStatus]);
+
+    const handleRemove = async () => {
+        setRemoving(true);
+        await removeItem(item.id);
+    };
+
+    const handleQtyChange = async (newQty: number) => {
+        if (newQty < 1) return;
+        await updateQuantity(item.id, newQty);
+    };
 
     const isPreOrder = item.stockStatus === 'pre-order';
+
+    const dragX = useMotionValue(0);
+    const background = useTransform(
+        dragX,
+        [-80, 0],
+        ['rgba(239,68,68,0.15)', 'rgba(255,255,255,0)']
+    );
+    const trashOpacity = useTransform(dragX, [-80, -30], [1, 0]);
 
     return (
         <motion.div
             layout
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            animate={removing ? { opacity: 0, x: -100, scale: 0.8 } : { opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, x: -50 }}
             whileHover={{ y: -4 }}
             className={`relative mb-4 overflow-hidden rounded-[28px] border transition-all duration-500 ${item.selected
@@ -46,12 +65,37 @@ export default function AntiGravityCartItem({ item }: AntiGravityCartItemProps) 
                 : 'bg-white/40 backdrop-blur-md border-white/20 shadow-sm'
                 }`}
         >
-            <div className="flex items-center p-4 gap-4">
+            {/* Баруун талд улаан trash icon (mobile only) */}
+            <motion.div
+                style={{ background }}
+                className="absolute inset-0 z-0 md:hidden pointer-events-none"
+            />
+            <motion.div
+                style={{ opacity: trashOpacity }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500 z-0 md:hidden"
+            >
+                <Trash2 className="w-6 h-6" />
+            </motion.div>
+
+            <motion.div
+                drag="x"
+                dragConstraints={{ left: -80, right: 0 }}
+                dragElastic={0.1}
+                style={{ x: dragX }}
+                onDragEnd={(_, info) => {
+                    if (info.offset.x < -60) {
+                        handleRemove();
+                    } else {
+                        dragX.set(0); // буцах
+                    }
+                }}
+                className="relative z-10 flex items-center p-4 gap-4 bg-transparent border-transparent"
+            >
                 {/* Selection Checkbox - Anti-gravity style */}
                 <button
                     onClick={() => toggleItemSelection(item.id)}
                     className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${item.selected
-                        ? isPreOrder ? 'bg-purple-600 border-purple-600 shadow-lg shadow-purple-500/30' : 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/30'
+                        ? isPreOrder ? 'bg-purple-600 border-purple-600 shadow-lg shadow-purple-500/30' : 'bg-[#FF5000] border-[#FF5000] shadow-lg shadow-orange-500/30'
                         : 'border-slate-300 bg-white/50'
                         }`}
                 >
@@ -61,7 +105,8 @@ export default function AntiGravityCartItem({ item }: AntiGravityCartItemProps) 
                 {/* Product Image */}
                 <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-slate-50 shrink-0">
                     <Image
-                        src={item.image || '/soyol-logo.png'}
+                        src={imgError ? '/soyol-logo.png' : (item.image || '/soyol-logo.png')}
+                        onError={() => setImgError(true)}
                         alt={item.name}
                         fill
                         className="object-contain p-2"
@@ -89,8 +134,8 @@ export default function AntiGravityCartItem({ item }: AntiGravityCartItemProps) 
                 </div>
 
                 {/* Product Info */}
-                <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-slate-800 truncate mb-1">{item.name}</h3>
+                <div className="flex-1 min-w-0 pointer-events-none md:pointer-events-auto">
+                    <h3 className="text-sm font-bold text-slate-800 truncate mb-1 pointer-events-auto">{item.name}</h3>
 
                     {/* Delivery Estimate (Gemini Powered) */}
                     {isPreOrder && deliveryEstimate && (
@@ -100,22 +145,22 @@ export default function AntiGravityCartItem({ item }: AntiGravityCartItemProps) 
                     )}
 
                     <div className="flex items-center gap-2 mb-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${isPreOrder ? 'text-purple-600 bg-purple-50 border-purple-100/50' : 'text-blue-600 bg-blue-50 border-blue-100/50'}`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${isPreOrder ? 'text-purple-600 bg-purple-50 border-purple-100/50' : 'text-[#FF5000] bg-orange-50 border-orange-100/50'}`}>
                             {item.category}
                         </span>
                     </div>
 
-                    <div className="flex items-end justify-between">
+                    <div className="flex items-end justify-between pointer-events-auto">
                         <div className="flex flex-col">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Price</p>
-                            <p className="text-xl font-bold text-orange-500">{formatPrice(item.price)}</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Үнэ</p>
+                            <p className="text-xl font-bold text-[#FF5000]">{formatPrice(item.price)}</p>
                         </div>
 
                         {/* Quantity Controls - Premium Style */}
                         <div className="flex items-center bg-slate-50 rounded-2xl p-1 border border-slate-100 shadow-inner">
                             <motion.button
                                 whileTap={{ scale: 0.9 }}
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                onClick={() => handleQtyChange(item.quantity - 1)}
                                 className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${item.quantity <= 1 ? 'text-slate-300' : 'text-slate-600 hover:bg-white hover:shadow-sm hover:text-[#FF5000]'}`}
                                 disabled={item.quantity <= 1}
                             >
@@ -124,7 +169,7 @@ export default function AntiGravityCartItem({ item }: AntiGravityCartItemProps) 
                             <span className="w-10 text-center text-sm font-black text-slate-900">{item.quantity}</span>
                             <motion.button
                                 whileTap={{ scale: 0.9 }}
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                onClick={() => handleQtyChange(item.quantity + 1)}
                                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-600 hover:bg-white hover:shadow-sm hover:text-[#FF5000] transition-all"
                             >
                                 <Plus className="w-4 h-4" />
@@ -133,18 +178,18 @@ export default function AntiGravityCartItem({ item }: AntiGravityCartItemProps) 
                     </div>
                 </div>
 
-                {/* Remove Button */}
+                {/* Remove Button - Desktop only since it is handled by swipe on mobile */}
                 <button
-                    onClick={() => removeItem(item.id)}
-                    className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors p-1"
+                    onClick={handleRemove}
+                    className="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors p-1 hidden md:block"
                 >
                     <Trash2 className="w-4 h-4" />
                 </button>
-            </div>
+            </motion.div>
 
             {/* Decorative Glow */}
             {item.selected && (
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 blur-[40px] rounded-full -mr-16 -mt-16 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 blur-[40px] rounded-full -mr-16 -mt-16 pointer-events-none" />
             )}
         </motion.div>
     );

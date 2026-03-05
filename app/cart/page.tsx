@@ -3,6 +3,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, ArrowLeft, Check, Clock, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
+import useSWR from 'swr';
 import { useCartStore } from '@/store/cartStore';
 import { formatPrice } from '@/lib/utils';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -12,6 +14,11 @@ import TaobaoStickyFooter from '@/components/cart/TaobaoStickyFooter';
 export default function CartPage() {
     const { items } = useCartStore();
     const { t } = useTranslation();
+
+    const { data } = useSWR('/api/products?limit=4', (url) =>
+        fetch(url).then(r => r.json())
+    );
+    const suggested = data?.products || [];
 
     if (items.length === 0) {
         return (
@@ -71,19 +78,36 @@ export default function CartPage() {
                     </Link>
 
                     {/* Optional: Suggested Products Section */}
-                    <div className="w-[100vw] px-4 overflow-x-hidden md:w-full md:px-0">
+                    <div className="w-[100vw] px-4 overflow-x-hidden md:w-full md:px-0 text-left">
                         <div className="flex items-center justify-between mb-4 w-full">
                             <h3 className="text-sm font-bold text-gray-800">Танд санал болгох</h3>
                         </div>
                         <div className="flex overflow-x-auto gap-3 pb-6 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                            {/* Dummy Product Cards */}
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="min-w-[140px] w-[140px] snap-start bg-white rounded-2xl p-3 border border-gray-100 shadow-sm flex flex-col gap-2">
-                                    <div className="w-full aspect-[4/5] bg-gray-50 rounded-xl relative overflow-hidden mb-1" />
-                                    <div className="h-3 w-3/4 bg-gray-100 rounded-full" />
-                                    <div className="h-4 w-1/2 bg-gray-200 rounded-full" />
-                                </div>
-                            ))}
+                            {suggested.length > 0
+                                ? suggested.slice(0, 3).map((p: any) => (
+                                    <Link key={p.id} href={`/product/${p.id}`} className="min-w-[140px] w-[140px] snap-start">
+                                        <motion.div
+                                            whileHover={{ y: -4, scale: 1.02 }}
+                                            className="bg-white rounded-2xl p-3 border border-slate-100/50 shadow-sm flex flex-col gap-2 h-full cursor-pointer"
+                                        >
+                                            <div className="w-full aspect-[4/5] bg-slate-50 rounded-xl relative overflow-hidden mb-1">
+                                                <Image src={p.image || '/soyol-logo.png'} alt={p.name} fill className="object-contain p-2" />
+                                            </div>
+                                            <p className="text-xs font-bold text-slate-800 truncate">{p.name}</p>
+                                            <p className="text-sm font-black text-[#FF5000]">
+                                                {p.price.toLocaleString()}₮
+                                            </p>
+                                        </motion.div>
+                                    </Link>
+                                ))
+                                : [1, 2, 3].map((i) => (
+                                    <div key={i} className="min-w-[140px] w-[140px] snap-start bg-white rounded-2xl p-3 border border-gray-100 shadow-sm flex flex-col gap-2 animate-pulse">
+                                        <div className="w-full aspect-[4/5] bg-gray-50 rounded-xl relative overflow-hidden mb-1" />
+                                        <div className="h-3 w-3/4 bg-gray-100 rounded-full" />
+                                        <div className="h-4 w-1/2 bg-gray-200 rounded-full" />
+                                    </div>
+                                ))
+                            }
                         </div>
                     </div>
                 </motion.div>
@@ -169,16 +193,34 @@ export default function CartPage() {
                         <ChevronRight className="w-4 h-4 text-slate-300" />
                     </div>
                     <div className="grid grid-cols-2 gap-3 pb-10">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div
-                                key={i}
-                                className="aspect-[3/4] bg-white rounded-[32px] border border-slate-100/50 shadow-sm animate-pulse flex flex-col p-4 gap-3"
-                            >
-                                <div className="flex-1 bg-slate-50 rounded-2xl" />
-                                <div className="h-3 w-3/4 bg-slate-50 rounded-full" />
-                                <div className="h-4 w-1/2 bg-slate-50 rounded-full" />
-                            </div>
-                        ))}
+                        {suggested.length > 0
+                            ? suggested.slice(0, 4).map((p: any) => (
+                                <Link key={p.id} href={`/product/${p.id}`}>
+                                    <motion.div
+                                        whileHover={{ y: -4, scale: 1.02 }}
+                                        className="aspect-[3/4] bg-white rounded-[32px] border border-slate-100/50 shadow-sm flex flex-col p-4 gap-3 cursor-pointer h-full"
+                                    >
+                                        <div className="flex-1 relative rounded-2xl overflow-hidden bg-slate-50">
+                                            <Image src={p.image || '/soyol-logo.png'} alt={p.name} fill className="object-contain p-2" />
+                                        </div>
+                                        <p className="text-xs font-bold text-slate-800 truncate">{p.name}</p>
+                                        <p className="text-sm font-black text-[#FF5000]">
+                                            {p.price.toLocaleString()}₮
+                                        </p>
+                                    </motion.div>
+                                </Link>
+                            ))
+                            : [1, 2, 3, 4].map((i) => (
+                                <div
+                                    key={i}
+                                    className="aspect-[3/4] bg-white rounded-[32px] border border-slate-100/50 shadow-sm animate-pulse flex flex-col p-4 gap-3"
+                                >
+                                    <div className="flex-1 bg-slate-50 rounded-2xl" />
+                                    <div className="h-3 w-3/4 bg-slate-50 rounded-full" />
+                                    <div className="h-4 w-1/2 bg-slate-50 rounded-full" />
+                                </div>
+                            ))
+                        }
                     </div>
                 </div>
             </div>

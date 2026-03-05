@@ -20,33 +20,11 @@ export async function POST(request: Request) {
         // Check if user exists
         const existingUser = await users.findOne({ phone });
 
-        let shouldCreateBytes = true;
-
         if (existingUser) {
-            // If user exists, we check if we should update it or fail
-            console.log('[Register API] User exists:', existingUser._id);
-
-            // OPTION: If you want to allow "resetting" or "updating" the user with new info
-            // For now, let's just update the user with new password/name/age
-            // This effectively allows "claiming" or "resetting" the account with the new credentials
-
-            // Hash password
-            const hashedPassword = await bcrypt.hash(password, 10);
-
-            await users.updateOne(
-                { _id: existingUser._id },
-                {
-                    $set: {
-                        password: hashedPassword,
-                        name,
-                        age: Number(age),
-                        updatedAt: new Date()
-                    }
-                }
+            return NextResponse.json(
+                { error: 'Энэ дугаар бүртгэлтэй байна' },
+                { status: 409 }
             );
-
-            console.log('[Register API] Updated existing user:', phone);
-            return NextResponse.json({ success: true, message: 'Account updated successfully' });
         }
 
         // Hash password

@@ -11,11 +11,11 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useProducts, type ApiProduct } from '@/lib/hooks/useProducts';
+import { useProducts } from '@/lib/hooks/useProducts';
+import { type Product } from '@/models/Product';
 import MobileHero from '@/components/MobileHero';
 import MobileProductGrid from '@/components/MobileProductGrid';
-
-type Product = ApiProduct;
+import InfiniteScrollTrigger from '@/components/InfiniteScrollTrigger';
 
 type FilterType = 'all' | 'Шинэ' | 'Бэлэн' | 'Захиалга' | 'Хямдрал';
 type SortType = 'newest' | 'price-low' | 'price-high' | 'name-az';
@@ -23,7 +23,7 @@ type SortType = 'newest' | 'price-low' | 'price-high' | 'name-az';
 export default function HomePage() {
   const { currency, convertPrice } = useLanguage();
   const { t } = useTranslation();
-  const { products: allProducts, isLoading: loading, isError: productsError, connectionError } = useProducts();
+  const { products: allProducts, isLoading: loading, isLoadingMore, isReachingEnd, size, setSize, error } = useProducts();
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [sortBy, setSortBy] = useState<SortType>('name-az');
@@ -256,7 +256,7 @@ export default function HomePage() {
           </div>
 
           {/* Products Grid */}
-          {productsError || connectionError ? (
+          {error ? (
             <div className="text-center py-20 px-4">
               <p className="text-red-500">Error loading products.</p>
             </div>
@@ -279,6 +279,15 @@ export default function HomePage() {
               <div className="lg:hidden">
                 <MobileProductGrid products={sortedProducts.filter(p => !p.featured)} />
               </div>
+
+              {/* Infinite Scroll Trigger */}
+              {(activeFilter === 'all' || activeFilter === 'Шинэ') && (
+                <InfiniteScrollTrigger
+                  onLoadMore={() => setSize(size + 1)}
+                  hasMore={!isReachingEnd}
+                  isLoading={!!isLoadingMore}
+                />
+              )}
             </>
           )}
         </div>

@@ -34,9 +34,9 @@ export async function GET(request: Request) {
 // Update order (Status, Delivery Estimate)
 export async function PUT(request: Request) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const { userId, role } = await auth();
+        if (!userId || role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
         const { orderId, status, deliveryEstimate } = await request.json();

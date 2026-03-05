@@ -1,181 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React from 'react';
+import useSWR from 'swr';
 import Link from 'next/link';
-import Image from 'next/image';
-import {
-  Package, PlusCircle, Pencil, Trash2, Loader2, LayoutDashboard, ArrowLeft,
-  Search, Filter, TrendingUp, AlertCircle, CheckCircle, Tag, Star,
-  ShoppingCart, MessageCircle, Menu, X, Globe, BarChart3, Layers, Zap
-} from 'lucide-react';
-import toast from 'react-hot-toast';
-import { createProduct, deleteProduct, getAllProducts, updateProduct, ProductFormData } from '@/app/actions/products';
-import ImageUpload from '@/components/ImageUpload';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ShoppingCart, TrendingUp, Package, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import StatCard from '@/components/admin/StatCard';
+import { formatPrice } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
-type Product = {
-  _id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  originalPrice?: number;
-  discountPercent?: number;
-  sections?: string[];
-  image: string | null;
-  category: string;
-  stockStatus: string;
-  inventory?: number;
-  featured?: boolean;
-  brand?: string;
-  model?: string;
-  delivery?: string;
-  paymentMethods?: string;
-  createdAt: string;
-  attributes?: Record<string, string>;
-};
+const fetcher = (url: string) => fetch(url).then(r => r.json());
 
-type Attribute = {
-  _id: string;
-  name: string;
-  type: 'select' | 'text' | 'number';
-  options: string[];
-};
+export default function AdminDashboardPage() {
+  const { user } = useAuth();
 
-type Order = {
-  _id: string;
-  totalPrice: number;
-  status: 'pending' | 'confirmed' | 'delivered';
-  createdAt: string;
-};
+  // Fetch dashboard data
+  const { data: ordersData, error: ordersError } = useSWR('/api/admin/orders?limit=5', fetcher, { refreshInterval: 15000 });
+  const { data: productsData, error: productsError } = useSWR('/api/products', fetcher, { refreshInterval: 60000 });
 
-type Category = {
-  id: string;
-  name: string;
-};
+  const orders = ordersData?.orders || [];
+  const products = productsData?.products || [];
+  const loadingOrders = !ordersData && !ordersError;
+  const loadingProducts = !productsData && !productsError;
 
-const SECTIONS = [
-  { id: 'Шинэ', label: 'Шинэ', icon: '🔥' },
-  { id: 'Бэлэн', label: 'Бэлэн', icon: '📦' },
-  { id: 'Захиалга', label: 'Захиалга', icon: '🌐' },
-  { id: 'Хямдрал', label: 'Хямдрал', icon: '🏷️' },
-];
-
-export default function AdminDashboard() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [attributes, setAttributes] = useState<Attribute[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState(true);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    originalPrice: '',
-    discountPercent: '',
-    sections: [] as string[],
-    image: '',
-    category: '', // Starts empty
-    stockStatus: 'in-stock',
-    inventory: '0',
-    brand: '',
-    model: '',
-    delivery: 'Үнэгүй',
-    paymentMethods: 'QPay, SocialPay, Card',
-    attributes: {} as Record<string, string>,
-  });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [togglingFeatured, setTogglingFeatured] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showDiscountFields, setShowDiscountFields] = useState(false);
-
-  useEffect(() => {
-    setShowDiscountFields(formData.sections?.includes('Хямдрал') || false);
-  }, [formData.sections]);
-
-  useEffect(() => {
-    if (showDiscountFields) {
-      const op = parseFloat(formData.originalPrice);
-      const dp = parseFloat(formData.discountPercent);
-      if (!isNaN(op) && !isNaN(dp)) {
-        const salePrice = Math.round((op * (1 - dp / 100)) / 10) * 10;
-        if (String(salePrice) !== formData.price) {
-          setFormData(prev => ({ ...prev, price: String(salePrice) }));
-        }
-      }
-    }
-  }, [formData.originalPrice, formData.discountPercent, showDiscountFields, formData.price]);
-
-  const fetchProducts = async () => {
-    const data = await getAllProducts();
-    setProducts(data || []);
-  };
-
-  const fetchAttributes = async () => {
-    try {
-      const res = await fetch('/api/attributes');
-      if (res.ok) {
-        const data = await res.json();
-        setAttributes(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch attributes:', error);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch('/api/categories');
-      if (res.ok) {
-        const data = await res.json();
-        const fetchedCats = data.categories || [];
-        setCategories(fetchedCats);
-        // Default category for new products
-        if (!formData.category && fetchedCats.length > 0) {
-          setFormData(prev => ({ ...prev, category: fetchedCats[0].id }));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-    }
-  };
-
-  const fetchOrders = async () => {
-    try {
-      const res = await fetch('/api/admin/orders');
-      const data = await res.json();
-      setOrders(data.orders || []);
-    } catch (error) {
-      console.error('Failed to fetch orders:', error);
-    } finally {
-      setOrdersLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      await Promise.all([fetchProducts(), fetchAttributes(), fetchOrders(), fetchCategories()]);
-      setLoading(false);
-    })();
-  }, []);
-
-  // Calculate Statistics
-  const stats = {
-    totalProducts: products.length,
-    totalInventory: products.reduce((acc, p) => acc + (p.inventory || 0), 0),
-    lowStock: products.filter(p => (p.inventory || 0) < 5).length,
-    outOfStock: products.filter(p => (p.inventory || 0) === 0).length,
-    activeCategories: new Set(products.map(p => p.category)).size
-  };
-
-  const todayOrdersCount = (() => {
+  // Calculate Stats
+  const todayOrders = (() => {
     const today = new Date();
-    return orders.filter(o => {
+    return orders.filter((o: any) => {
       const d = new Date(o.createdAt);
       return d.getFullYear() === today.getFullYear() &&
         d.getMonth() === today.getMonth() &&
@@ -183,799 +34,156 @@ export default function AdminDashboard() {
     }).length;
   })();
 
-  const totalRevenue = orders
-    .filter(o => o.status === 'delivered')
-    .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const revenue = orders
+    .filter((o: any) => o.status === 'delivered')
+    .reduce((sum: number, o: any) => sum + (o.totalPrice || 0), 0);
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const inventoryLow = products.filter((p: any) => (p.inventory || 0) < 5);
 
-  const openModal = (product?: Product) => {
-    if (product) {
-      setEditingId(product._id);
-      setFormData({
-        name: product.name,
-        description: product.description || '',
-        price: String(product.price),
-        originalPrice: String(product.originalPrice || ''),
-        discountPercent: String(product.discountPercent || ''),
-        sections: product.sections || [],
-        image: product.image || '',
-        category: product.category,
-        stockStatus: product.stockStatus,
-        inventory: String(product.inventory || 0),
-        brand: product.brand || '',
-        model: product.model || '',
-        delivery: product.delivery || 'Үнэгүй',
-        paymentMethods: product.paymentMethods || 'QPay, SocialPay, Card',
-        attributes: product.attributes || {}
-      });
-    } else {
-      setEditingId(null);
-      setFormData({
-        name: '',
-        description: '',
-        price: '',
-        originalPrice: '',
-        discountPercent: '',
-        sections: [],
-        image: '',
-        category: categories.length > 0 ? categories[0].id : '',
-        stockStatus: 'in-stock',
-        inventory: '0',
-        brand: '',
-        model: '',
-        delivery: 'Үнэгүй',
-        paymentMethods: 'QPay, SocialPay, Card',
-        attributes: {}
-      });
-    }
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingId(null);
-    setFormData({
-      name: '',
-      description: '',
-      price: '',
-      originalPrice: '',
-      discountPercent: '',
-      sections: [],
-      image: '',
-      category: categories.length > 0 ? categories[0].id : '',
-      stockStatus: 'in-stock',
-      inventory: '0',
-      brand: '',
-      model: '',
-      delivery: 'Үнэгүй',
-      paymentMethods: 'QPay, SocialPay, Card',
-      attributes: {}
-    });
-  };
-
-  const handleProductSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    const payload: ProductFormData = {
-      name: formData.name,
-      description: formData.description || '',
-      price: parseFloat(formData.price) || 0,
-      originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
-      discountPercent: formData.discountPercent ? parseFloat(formData.discountPercent) : undefined,
-      sections: formData.sections,
-      image: formData.image || '',
-      category: formData.category,
-      stockStatus: formData.stockStatus,
-      inventory: parseInt(formData.inventory) || 0,
-      brand: formData.brand,
-      model: formData.model,
-      delivery: formData.delivery,
-      paymentMethods: formData.paymentMethods,
-      attributes: formData.attributes,
-    };
-
-    if (editingId) {
-      const result = await updateProduct(editingId, payload);
-      if (result.success) {
-        toast.success('Бараа шинэчлэгдлээ');
-        closeModal();
-        fetchProducts();
-      } else toast.error(result.error || 'Error');
-    } else {
-      const result = await createProduct(payload);
-      if (result.success) {
-        toast.success('Бараа нэмэгдлээ');
-        closeModal();
-        fetchProducts();
-      } else toast.error(result.error || 'Error');
-    }
-    setSubmitting(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Устгах уу?')) return;
-    const result = await deleteProduct(id);
-    if (result.success) { toast.success('Устгагдлаа'); fetchProducts(); }
-    else toast.error(result.error || 'Error');
-  };
-
-  const formatPrice = (n: number) =>
-    new Intl.NumberFormat('mn-MN', { maximumFractionDigits: 0 }).format(n) + ' ₮';
-
-  const handleToggleFeatured = async (product: Product) => {
-    const newValue = !product.featured;
-    setTogglingFeatured(product._id);
-    try {
-      const res = await fetch(`/api/products/${product._id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ featured: newValue }),
-      });
-      if (res.ok) {
-        setProducts(prev => prev.map(p => p._id === product._id ? { ...p, featured: newValue } : p));
-        toast.success(newValue ? 'Онцгой болголоо ⭐' : 'Онцгой-оос хаслаа');
-      } else {
-        toast.error('Алдаа гарлаа');
-      }
-    } catch {
-      toast.error('Сервертэй холбогдож чадсангүй');
-    } finally {
-      setTogglingFeatured(null);
-    }
-  };
+  // Day formatting
+  const todayStr = new Date().toLocaleDateString('mn-MN', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex">
-      {/* Sidebar Overlay (Mobile) */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-white/10 transform transition-transform duration-300 ease-in-out
-        lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="h-full flex flex-col p-6">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
-              <span className="text-white font-black text-xl">S</span>
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-white leading-none">Soyol</h2>
-              <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mt-1">Admin Panel</p>
-            </div>
-          </div>
-
-          {/* Nav Items */}
-          <nav className="flex-1 space-y-1.5">
-            <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <BarChart3 className="w-5 h-5" />
-              <span className="text-sm font-bold">Хяналтын самбар</span>
-            </Link>
-            <Link href="/admin" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 text-amber-400 border-l-2 border-amber-500 transition-all shadow-lg shadow-amber-500/5">
-              <Package className="w-5 h-5" />
-              <span className="text-sm font-bold">Бүтээгдэхүүн</span>
-            </Link>
-            <Link href="/admin/attributes" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <Tag className="w-5 h-5" />
-              <span className="text-sm font-bold">Шинж чанар</span>
-            </Link>
-            <Link href="/admin/categories" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <Layers className="w-5 h-5" />
-              <span className="text-sm font-bold">Ангилал</span>
-            </Link>
-            <Link href="/admin/orders" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <ShoppingCart className="w-5 h-5" />
-              <span className="text-sm font-bold">Захиалгууд</span>
-            </Link>
-            <Link href="/admin/messages" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all">
-              <MessageCircle className="w-5 h-5" />
-              <span className="text-sm font-bold">Мессеж & Дуудлага</span>
-            </Link>
-          </nav>
-
-          {/* Bottom */}
-          <div className="pt-6 border-t border-white/5">
-            <Link href="/" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all group">
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-bold">Сайт руу буцах</span>
-            </Link>
-          </div>
+    <div className="p-6 md:p-8 space-y-8 h-full overflow-y-auto scrollbar-hide bg-slate-950">
+      {/* Header Greeting */}
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+            Сайн байна уу, {user?.name || 'Админ'} <span className="text-2xl animate-wave">👋</span>
+          </h1>
+          <p className="text-slate-400 mt-1">Өнөөдөр: {todayStr}</p>
         </div>
-      </aside>
+      </header>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header */}
-        <header className="border-b border-white/10 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 lg:hidden transition-colors"
-                >
-                  <Menu className="w-5 h-5" />
-                </button>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 lg:hidden">
-                    <Package className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold tracking-tight">Бүтээгдэхүүн</h1>
-                    <p className="text-xs text-slate-400 lg:block hidden">Бараа материалын удирдлага</p>
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => openModal()}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors font-medium shadow-lg shadow-amber-500/20 text-sm"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Бараа нэмэх</span>
-                <span className="sm:hidden">Нэмэх</span>
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-8 scrollbar-hide">
-          {loading ? (
-            <div className="flex justify-center py-20"><Loader2 className="w-10 h-10 text-amber-500 animate-spin" /></div>
-          ) : (
-            <>
-              {/* Statistics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Өнөөдрийн захиалга */}
-                <div className="bg-slate-900 border border-white/10 p-5 rounded-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <ShoppingCart className="w-16 h-16 text-blue-500" />
-                  </div>
-                  <div className="relative z-10">
-                    <p className="text-slate-400 text-sm font-medium">Өнөөдрийн захиалга</p>
-                    <h3 className="text-3xl font-bold text-white mt-1">
-                      {ordersLoading ? <span className="inline-flex items-center"><Loader2 className="w-5 h-5 animate-spin mr-2" />...</span> : todayOrdersCount}
-                    </h3>
-                    <div className="mt-2 text-xs text-blue-400 flex items-center gap-1">
-                      <ShoppingCart className="w-3 h-3" />
-                      <span>Өнөөдөр</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Нийт орлого */}
-                <div className="bg-slate-900 border border-white/10 p-5 rounded-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <TrendingUp className="w-16 h-16 text-emerald-500" />
-                  </div>
-                  <div className="relative z-10">
-                    <p className="text-slate-400 text-sm font-medium">Нийт орлого</p>
-                    <h3 className="text-3xl font-bold text-white mt-1">
-                      {ordersLoading ? <span className="inline-flex items-center"><Loader2 className="w-5 h-5 animate-spin mr-2" />...</span> : formatPrice(totalRevenue)}
-                    </h3>
-                    <div className="mt-2 text-xs text-emerald-400 flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" />
-                      <span>Хүргэгдсэн захиалга</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-slate-900 border border-white/10 p-5 rounded-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Package className="w-16 h-16 text-amber-500" />
-                  </div>
-                  <div className="relative z-10">
-                    <p className="text-slate-400 text-sm font-medium">Нийт бүтээгдэхүүн</p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{stats.totalProducts}</h3>
-                    <div className="mt-2 text-xs text-emerald-400 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Идэвхтэй зарагдаж байна</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-white/10 p-5 rounded-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Tag className="w-16 h-16 text-blue-500" />
-                  </div>
-                  <div className="relative z-10">
-                    <p className="text-slate-400 text-sm font-medium">Нийт төрөл</p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{stats.activeCategories}</h3>
-                    <div className="mt-2 text-xs text-blue-400 flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" />
-                      <span>Категориуд</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-white/10 p-5 rounded-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Package className="w-16 h-16 text-emerald-500" />
-                  </div>
-                  <div className="relative z-10">
-                    <p className="text-slate-400 text-sm font-medium">Нийт үлдэгдэл</p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{stats.totalInventory}</h3>
-                    <div className="mt-2 text-xs text-slate-400 flex items-center gap-1">
-                      <span>Агуулахад байгаа тоо</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-white/10 p-5 rounded-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <AlertCircle className="w-16 h-16 text-red-500" />
-                  </div>
-                  <div className="relative z-10">
-                    <p className="text-slate-400 text-sm font-medium">Дуусч байгаа</p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{stats.lowStock}</h3>
-                    <div className="mt-2 text-xs text-red-400 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      <span>{stats.outOfStock} бараа дууссан</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Filters & Search */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-900/50 p-4 rounded-2xl border border-white/10">
-                <div className="relative w-full sm:w-96">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="text"
-                    placeholder="Бараа хайх..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50 text-sm"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
-                  <button
-                    onClick={() => setFilterCategory('all')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterCategory === 'all' ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                  >
-                    Бүгд
-                  </button>
-                  {categories.map(cat => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setFilterCategory(cat.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterCategory === cat.id ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Product List */}
-              <div className="bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
-                {/* Desktop Table View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-slate-800/50 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-white/10">
-                        <th className="px-6 py-4">Зураг</th>
-                        <th className="px-6 py-4">Нэр & Төрөл</th>
-                        <th className="px-6 py-4">Үнэ</th>
-                        <th className="px-6 py-4">Үлдэгдэл</th>
-                        <th className="px-6 py-4">Төлөв</th>
-                        <th className="px-6 py-4 text-center">Онцгой</th>
-                        <th className="px-6 py-4 text-right">Үйлдэл</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {filteredProducts.length > 0 ? (
-                        filteredProducts.map((p) => (
-                          <tr key={p._id} className="hover:bg-white/5 transition-colors group">
-                            <td className="px-6 py-4">
-                              <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-800 ring-1 ring-white/10">
-                                {p.image ? (
-                                  <Image src={p.image} alt="" fill className="object-cover" sizes="48px" />
-                                ) : (
-                                  <Package className="w-5 h-5 text-slate-600 absolute inset-0 m-auto" />
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="text-sm font-medium text-white line-clamp-1">{p.name}</div>
-                              <div className="text-xs text-slate-500">{categories.find(c => c.id === p.category)?.name || p.category}</div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className="text-amber-400 font-medium text-sm">{formatPrice(p.price)}</span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-sm font-semibold ${(p.inventory || 0) < 5 ? 'text-red-400' : 'text-slate-300'}`}>
-                                  {p.inventory || 0}
-                                </span>
-                                {(p.inventory || 0) < 5 && (
-                                  <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${(p.inventory || 0) > 0 ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' : 'bg-red-500/10 text-red-400 ring-1 ring-red-500/20'}`}>
-                                {(p.inventory || 0) > 0 ? 'Бэлэн' : 'Дууссан'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <button
-                                onClick={() => handleToggleFeatured(p)}
-                                disabled={togglingFeatured === p._id}
-                                className={`p-2 rounded-lg transition-all duration-200 ${p.featured ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' : 'bg-white/5 text-slate-600 hover:text-slate-300 hover:bg-white/10'} disabled:opacity-50`}
-                                title={p.featured ? 'Онцгой-оос хасах' : 'Онцгой болгох'}
-                              >
-                                {togglingFeatured === p._id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Star className={`w-4 h-4 ${p.featured ? 'fill-amber-400' : ''}`} />
-                                )}
-                              </button>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => openModal(p)}
-                                  className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
-                                  title="Засах"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(p._id)}
-                                  className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
-                                  title="Устгах"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={7} className="px-6 py-12 text-center text-slate-500 text-sm">
-                            Бараа олдсонгүй.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile Card View */}
-                <div className="md:hidden space-y-4 p-4">
-                  {filteredProducts.length > 0 ? (
-                    filteredProducts.map((p) => (
-                      <div key={p._id} className="bg-slate-800/50 rounded-xl p-4 border border-white/5 space-y-4">
-                        <div className="flex items-start gap-4">
-                          <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-slate-800 ring-1 ring-white/10 flex-shrink-0">
-                            {p.image ? (
-                              <Image src={p.image} alt="" fill className="object-cover" sizes="64px" />
-                            ) : (
-                              <Package className="w-6 h-6 text-slate-600 absolute inset-0 m-auto" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-start gap-2">
-                              <h3 className="text-sm font-bold text-white line-clamp-2 mb-1">{p.name}</h3>
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => handleToggleFeatured(p)}
-                                  disabled={togglingFeatured === p._id}
-                                  className={`p-1.5 rounded-lg transition-colors ${p.featured ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700 text-slate-400 hover:text-amber-400'} disabled:opacity-50`}
-                                >
-                                  {togglingFeatured === p._id ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <Star className={`w-3.5 h-3.5 ${p.featured ? 'fill-amber-400' : ''}`} />
-                                  )}
-                                </button>
-                                <button
-                                  onClick={() => openModal(p)}
-                                  className="p-1.5 rounded-lg bg-slate-700 text-slate-400 hover:text-white transition-colors"
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(p._id)}
-                                  className="p-1.5 rounded-lg bg-slate-700 text-slate-400 hover:text-red-400 transition-colors"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                            <p className="text-xs text-slate-500 mb-2">{categories.find(c => c.id === p.category)?.name || p.category}</p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-amber-400 font-bold text-sm">{formatPrice(p.price)}</span>
-                              <div className="flex items-center gap-2">
-                                <span className={`text-xs ${(p.inventory || 0) < 5 ? 'text-red-400' : 'text-slate-400'}`}>
-                                  {p.inventory || 0} ширхэг
-                                </span>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${(p.inventory || 0) > 0 ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' : 'bg-red-500/10 text-red-400 ring-1 ring-red-500/20'}`}>
-                                  {(p.inventory || 0) > 0 ? 'Бэлэн' : 'Дууссан'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-12 text-slate-500 text-sm">
-                      Бараа олдсонгүй.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </main>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Өнөөдрийн захиалга"
+          value={loadingOrders ? '...' : todayOrders}
+          icon={ShoppingCart}
+          color="blue"
+          href="/admin/orders"
+        />
+        <StatCard
+          title="Нийт орлого (Хүргэгдсэн)"
+          value={loadingOrders ? '...' : formatPrice(revenue)}
+          icon={TrendingUp}
+          color="emerald"
+          href="/admin/orders"
+        />
+        <StatCard
+          title="Идэвхтэй бараа"
+          value={loadingProducts ? '...' : products.length}
+          icon={Package}
+          color="amber"
+          href="/admin/products"
+        />
+        <StatCard
+          title="Дуусч байгаа бараа"
+          value={loadingProducts ? '...' : inventoryLow.length}
+          icon={AlertCircle}
+          color="red"
+          href="/admin/products?filter=low-stock"
+        />
       </div>
 
-      {/* Modal Overlay */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeModal}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
-            >
-              <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-slate-900 z-10">
-                <h2 className="text-xl font-bold text-white">{editingId ? 'Бараа засах' : 'Бараа нэмэх'}</h2>
-                <button onClick={closeModal} className="p-2 rounded-lg text-slate-400 hover:bg-white/10 hover:text-white transition-colors">
-                  <span className="sr-only">Close</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <form onSubmit={handleProductSubmit} className="p-6 space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Нэр *</label>
-                    <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white placeholder-slate-600 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all" placeholder="Барааны нэр" />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Тайлбар</label>
-                    <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white placeholder-slate-600 focus:border-amber-500/50 outline-none resize-none transition-all" placeholder="Тайлбар" />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Харагдах хэсэг</label>
-                    <div className="flex flex-wrap gap-2">
-                      {SECTIONS.map((section) => {
-                        const isSelected = formData.sections.includes(section.id);
-                        return (
-                          <button
-                            key={section.id}
-                            type="button"
-                            onClick={() => {
-                              const newSections = isSelected
-                                ? formData.sections.filter(id => id !== section.id)
-                                : [...formData.sections, section.id];
-                              setFormData({ ...formData, sections: newSections });
-                            }}
-                            className={`px-4 py-2 rounded-full border text-xs font-bold transition-all flex items-center gap-2 ${isSelected
-                              ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/30'
-                              : 'bg-slate-800 border-white/10 text-slate-400 hover:border-white/20'
-                              }`}
-                          >
-                            <span>{section.icon}</span>
-                            <span>{section.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className={showDiscountFields ? "md:col-span-1" : "md:col-span-2"}>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                      {showDiscountFields ? 'Хямдралтай үнэ *' : 'Үнэ *'}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        required
-                        readOnly={showDiscountFields}
-                        min={0}
-                        className={`w-full pl-8 pr-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all ${showDiscountFields ? 'bg-slate-900/50 text-orange-400 font-bold' : ''}`}
-                        placeholder="0"
-                      />
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₮</span>
-                    </div>
-                    {showDiscountFields && (
-                      <p className="text-[10px] text-slate-500 mt-1">Автоматаар тооцоологдсон</p>
-                    )}
-                  </div>
-
-                  {showDiscountFields && (
-                    <div className="grid grid-cols-2 gap-4 md:col-span-2 bg-orange-500/5 p-4 rounded-2xl border border-orange-500/10">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 italic">Анхны үнэ *</label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            value={formData.originalPrice}
-                            onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
-                            required={showDiscountFields}
-                            min={0}
-                            className="w-full pl-8 pr-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all"
-                            placeholder="49900"
-                          />
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₮</span>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 italic">Хямдралын хувь % *</label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            value={formData.discountPercent}
-                            onChange={(e) => setFormData({ ...formData, discountPercent: e.target.value })}
-                            required={showDiscountFields}
-                            min={1}
-                            max={99}
-                            className="w-full pl-4 pr-8 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all"
-                            placeholder="20"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</span>
-                        </div>
-                      </div>
-
-                      {formData.originalPrice && formData.discountPercent && (
-                        <div className="col-span-2 text-xs font-bold text-orange-500 mt-1 flex items-center gap-2">
-                          <Zap className="w-3 h-3" />
-                          <span>
-                            {parseInt(formData.originalPrice).toLocaleString()}₮ → {parseInt(formData.price).toLocaleString()}₮ ({formData.discountPercent}% хямдрал)
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Үлдэгдэл *</label>
-                    <input type="number" value={formData.inventory} onChange={(e) => setFormData({ ...formData, inventory: e.target.value })} required min={0} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all" placeholder="0" />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Төлөв</label>
-                    <select value={formData.stockStatus} onChange={(e) => setFormData({ ...formData, stockStatus: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none appearance-none cursor-pointer">
-                      <option value="in-stock">Бэлэн (In Stock)</option>
-                      <option value="out-of-stock">Дууссан (Out of Stock)</option>
-                      <option value="pre-order">Захиалгаар (Pre-order)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Төрөл</label>
-                    <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none appearance-none cursor-pointer">
-                      {categories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Брэнд</label>
-                    <input type="text" value={formData.brand} onChange={(e) => setFormData({ ...formData, brand: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all" placeholder="Жишээ: Lighting" />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Загвар</label>
-                    <input type="text" value={formData.model} onChange={(e) => setFormData({ ...formData, model: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all" placeholder="Жишээ: Aputure 120d II" />
-                  </div>
-
-
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Хүргэлт</label>
-                    <input type="text" value={formData.delivery} onChange={(e) => setFormData({ ...formData, delivery: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all" placeholder="Жишээ: Үнэгүй" />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Төлбөрийн нөхцөл</label>
-                    <input type="text" value={formData.paymentMethods} onChange={(e) => setFormData({ ...formData, paymentMethods: e.target.value })} className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all" placeholder="Жишээ: QPay, SocialPay, Card" />
-                  </div>
-
-                  {/* Dynamic Attributes */}
-                  {attributes.length > 0 && (
-                    <div className="md:col-span-2 border-t border-white/10 pt-4 mt-2">
-                      <h3 className="text-sm font-semibold text-slate-300 mb-4">Нэмэлт шинж чанарууд</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        {attributes.map((attr) => (
-                          <div key={attr._id}>
-                            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{attr.name}</label>
-                            {attr.type === 'select' ? (
-                              <div className="relative">
-                                <select
-                                  value={formData.attributes?.[attr._id] || ''}
-                                  onChange={(e) => setFormData({
-                                    ...formData,
-                                    attributes: { ...formData.attributes, [attr._id]: e.target.value }
-                                  })}
-                                  className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none appearance-none cursor-pointer"
-                                >
-                                  <option value="">Сонгох...</option>
-                                  {attr.options.map((opt) => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                  ))}
-                                </select>
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
-                                </div>
-                              </div>
-                            ) : (
-                              <input
-                                type={attr.type === 'number' ? 'number' : 'text'}
-                                value={formData.attributes?.[attr._id] || ''}
-                                onChange={(e) => setFormData({
-                                  ...formData,
-                                  attributes: { ...formData.attributes, [attr._id]: e.target.value }
-                                })}
-                                className="w-full px-4 py-3 rounded-xl bg-slate-950/50 border border-white/10 text-white focus:border-amber-500/50 outline-none transition-all"
-                                placeholder={attr.name}
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Зургийн URL</label>
-                    <ImageUpload
-                      value={formData.image}
-                      onChange={(url) => setFormData({ ...formData, image: url })}
-                      onRemove={() => setFormData({ ...formData, image: '' })}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-4 border-t border-white/10 mt-2">
-                  <button type="button" onClick={closeModal} className="px-6 py-3 rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 font-medium transition-all">Цуцлах</button>
-                  <button type="submit" disabled={submitting} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-medium hover:shadow-lg hover:shadow-amber-500/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                    {editingId ? 'Хадгалах' : 'Нэмэх'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+      {/* Two-column layout for Tables */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Recent Orders Table */}
+        <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col shadow-xl">
+          <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-white">Сүүлийн захиалгууд</h2>
+            <Link href="/admin/orders" className="text-sm text-amber-500 hover:text-amber-400 flex items-center gap-1 font-medium transition-colors">
+              Бүх захиалга <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-        )}
-      </AnimatePresence>
+          <div className="p-0 overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-950/50 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                  <th className="p-4 border-b border-slate-800">Захиалга#</th>
+                  <th className="p-4 border-b border-slate-800">Огноо</th>
+                  <th className="p-4 border-b border-slate-800">Дүн</th>
+                  <th className="p-4 border-b border-slate-800">Төлөв</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingOrders ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-amber-500 mx-auto" /></td>
+                  </tr>
+                ) : orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="p-8 text-center text-slate-500 text-sm">Захиалга олдсонгүй</td>
+                  </tr>
+                ) : (
+                  orders.slice(0, 5).map((order: any) => (
+                    <tr key={order._id} className="hover:bg-slate-800/50 transition-colors border-b border-slate-800/50 last:border-0">
+                      <td className="p-4 text-sm font-medium text-white">{order._id.substring(0, 8).toUpperCase()}</td>
+                      <td className="p-4 text-sm text-slate-400">{new Date(order.createdAt).toLocaleDateString()}</td>
+                      <td className="p-4 text-sm font-bold text-amber-400">{formatPrice(order.totalPrice)}</td>
+                      <td className="p-4">
+                        {order.status === 'pending' && <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/20">Хүлээгдэж байна</span>}
+                        {order.status === 'confirmed' && <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/20">Баталгаажсан</span>}
+                        {order.status === 'delivered' && <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">Хүргэгдсэн</span>}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Low Stock Warning */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col shadow-xl">
+          <div className="p-6 border-b border-slate-800">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              Дуусч байгаа бараа <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 text-xs font-black">{inventoryLow.length}</span>
+            </h2>
+          </div>
+          <div className="p-4 flex-1 overflow-y-auto">
+            {loadingProducts ? (
+              <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-red-500 mx-auto" /></div>
+            ) : inventoryLow.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-sm">Бүх бараа хангалттай үлдэгдэлтэй байна.</div>
+            ) : (
+              <div className="space-y-4">
+                {inventoryLow.slice(0, 5).map((p: any) => {
+                  const stock = p.inventory || 0;
+                  const isOut = stock === 0;
+                  const pColor = isOut ? 'bg-red-500' : 'bg-orange-500';
+                  const width = isOut ? '0%' : `${Math.max(5, (stock / 5) * 100)}%`;
+
+                  return (
+                    <Link href={`/admin/products/${p._id}`} key={p._id} className="block group">
+                      <div className="flex justify-between items-start mb-1 text-sm">
+                        <span className="text-slate-300 font-medium truncate pr-4 group-hover:text-white transition-colors">{p.name}</span>
+                        <span className={`font-bold ${isOut ? 'text-red-500' : 'text-orange-500'}`}>{stock}ш</span>
+                      </div>
+                      <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                          className={`h-full ${pColor} rounded-full`}
+                        />
+                      </div>
+                    </Link>
+                  );
+                })}
+                {inventoryLow.length > 5 && (
+                  <div className="pt-2 text-center">
+                    <Link href="/admin/products" className="text-xs text-slate-500 hover:text-white transition-colors">
+                      Цааш харах ({inventoryLow.length - 5})
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
