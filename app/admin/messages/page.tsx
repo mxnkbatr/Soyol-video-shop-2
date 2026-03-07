@@ -10,7 +10,6 @@ import ChatWindow from '@/components/Chat/ChatWindow';
 import { LiveKitRoom, VideoConference } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 
 interface User {
     _id: string;
@@ -252,9 +251,9 @@ export default function AdminMessagesPage() {
                                             <motion.div
                                                 initial={{ opacity: 0, scale: 0.9 }}
                                                 animate={{ opacity: 1, scale: 1 }}
-                                                className="w-24 h-24 rounded-3xl bg-slate-900/50 border border-slate-800 flex items-center justify-center mb-6 relative overflow-hidden p-4"
+                                                className="w-24 h-24 rounded-3xl bg-slate-900/50 border border-slate-800 flex items-center justify-center mb-6 relative"
                                             >
-                                                <Image src="/images/support-icon.png" alt="" fill className="object-contain p-2" />
+                                                <MessageCircle className="w-10 h-10 text-slate-600" />
                                                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-amber-500 rounded-full animate-pulse flex items-center justify-center">
                                                     <div className="w-2 h-2 bg-amber-300 rounded-full" />
                                                 </div>

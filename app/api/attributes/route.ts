@@ -4,8 +4,6 @@ import { getCollection } from '@/lib/mongodb';
 import { auth } from '@/lib/auth';
 import { ObjectId } from 'mongodb';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET() {
   try {
     const attributesCollection = await getCollection('attributes');

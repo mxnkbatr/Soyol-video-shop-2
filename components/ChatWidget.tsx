@@ -27,12 +27,13 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
     const { user } = useUser();
     const { t } = useTranslation();
 
+    // Generate a stable guest ID for unauthenticated users so chat messages have a sender
     const [guestId] = useState(() => {
         if (typeof window === 'undefined') return 'guest';
-        let id = localStorage.getItem('soyol-guest-id');
+        let id = sessionStorage.getItem('soyol-guest-id');
         if (!id) {
             id = `guest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-            localStorage.setItem('soyol-guest-id', id);
+            sessionStorage.setItem('soyol-guest-id', id);
         }
         return id;
     });
@@ -124,10 +125,8 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                     onClick={() => setViewMode('chat_selection')}
                                     className="flex items-center gap-4 p-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/5 transition-all group text-left"
                                 >
-                                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:bg-[#FF5000] transition-colors overflow-hidden">
-                                        <div className="w-8 h-8 relative">
-                                            <Image src="/images/support-icon.png" alt="" fill className="object-contain" />
-                                        </div>
+                                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center group-hover:bg-[#FF5000] transition-colors">
+                                        <MessageCircle className="w-6 h-6 text-blue-500 group-hover:text-white" strokeWidth={1.2} />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-white text-lg">{t('chat', 'sendMessage')}</h4>
@@ -139,10 +138,8 @@ export default function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                     onClick={() => setViewMode('video_selection')}
                                     className="flex items-center gap-4 p-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/5 transition-all group text-left"
                                 >
-                                    <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center group-hover:bg-[#FF5000] transition-colors overflow-hidden">
-                                        <div className="w-8 h-8 relative">
-                                            <Image src="/images/support-icon.png" alt="" fill className="object-contain" />
-                                        </div>
+                                    <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center group-hover:bg-[#FF5000] transition-colors">
+                                        <Video className="w-6 h-6 text-orange-500 group-hover:text-white" strokeWidth={1.2} />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-white text-lg">{t('chat', 'videoCall')}</h4>

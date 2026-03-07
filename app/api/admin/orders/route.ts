@@ -4,8 +4,6 @@ import { ObjectId } from 'mongodb';
 import { auth } from '@/lib/auth';
 import { sendOrderStatusUpdate } from '@/lib/email';
 
-export const dynamic = 'force-dynamic';
-
 // Get all orders (Admin only)
 export async function GET(request: Request) {
     try {

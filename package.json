@@ -11,6 +11,10 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.30",
     "@ai-sdk/react": "^3.0.99",
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/ios": "^8.2.0",
     "@google/generative-ai": "^0.24.1",
     "@livekit/components-react": "^2.9.19",
     "@livekit/components-styles": "^1.2.0",
